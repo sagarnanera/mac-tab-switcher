@@ -11,6 +11,7 @@ final class InventoryWindowController: NSWindowController {
     private let outline = NSOutlineView()
     private let status = NSTextField(labelWithString: "")
     private var groups: [AppGroup] = []
+    private var describedPIDs: Set<pid_t> = []
     private var groupNativeTabs = true
 
     convenience init() {
@@ -90,6 +91,7 @@ final class InventoryWindowController: NSWindowController {
             options: .init(groupNativeTabs: groupNativeTabs)
         )
         groups = result.groups
+        describedPIDs = await inventory.describedPIDs
         outline.reloadData()
         outline.expandItem(nil, expandChildren: true)
         status.stringValue = result.diagnostics.joined(separator: "\n")
@@ -145,18 +147,22 @@ extension InventoryWindowController: NSOutlineViewDelegate {
             "\(group.app.localizedName)  —  \(group.windows.count) window\(group.windows.count == 1 ? "" : "s")"
                 + (group.expandable ? "  ⧉" : "")
         case let window as WindowEntry:
-            "\(badges(window.flags))  \(window.title)   [id \(window.windowID)]"
+            "\(badges(window))  \(window.title)   [id \(window.windowID)]"
         default:
             ""
         }
     }
 
-    private func badges(_ flags: WindowFlags) -> String {
+    private func badges(_ window: WindowEntry) -> String {
         var marks: [String] = []
-        if flags.contains(.main) { marks.append("main") }
-        if flags.contains(.minimized) { marks.append("min") }
-        if flags.contains(.nativeTab) { marks.append("tab") }
-        if !flags.contains(.onCurrentSpace) { marks.append("other-space") }
+        if window.flags.contains(.main) { marks.append("main") }
+        if window.flags.contains(.minimized) { marks.append("min") }
+        if window.flags.contains(.nativeTab) { marks.append("tab") }
+        if window.isLikelyOtherSpace(appWasDescribed: describedPIDs.contains(window.pid)) {
+            marks.append("other-space")
+        } else if !window.flags.contains(.axCorroborated) {
+            marks.append("no-ax")
+        }
         return marks.isEmpty ? "    " : "[\(marks.joined(separator: ","))]"
     }
 }

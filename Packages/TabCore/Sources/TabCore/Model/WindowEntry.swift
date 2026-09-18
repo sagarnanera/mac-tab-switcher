@@ -45,14 +45,30 @@ public struct WindowEntry: Sendable, Hashable, Identifiable {
     }
 }
 
+extension WindowEntry {
+    /// Distinguishes "on another Space" from "we could not see it at all". Only
+    /// meaningful when Accessibility described at least one other window of this app,
+    /// which is what `appWasDescribed` asserts.
+    public func isLikelyOtherSpace(appWasDescribed: Bool) -> Bool {
+        appWasDescribed && !flags.contains(.axCorroborated)
+    }
+}
+
 public struct WindowFlags: OptionSet, Sendable, Hashable {
     public let rawValue: UInt16
     public init(rawValue: UInt16) { self.rawValue = rawValue }
 
     public static let minimized      = WindowFlags(rawValue: 1 << 0)
-    /// False for windows ScreenCaptureKit reports but `kAXWindowsAttribute` does not —
-    /// the AX API only ever reports the current Space.
-    public static let onCurrentSpace = WindowFlags(rawValue: 1 << 1)
+    /// Accessibility corroborated this window: it appeared in `kAXWindowsAttribute`,
+    /// so we have an authoritative title, its minimized/main state, and an element to
+    /// raise it with.
+    ///
+    /// Absence does **not** mean "on another Space", though that is one cause — AX
+    /// only ever reports the current Space. It also covers a denied permission, a
+    /// timeout, and a process AX simply will not describe. Callers that want to say
+    /// "other Space" must check that AX described *other* windows of the same app
+    /// first; see `WindowEntry.isLikelyOtherSpace(appWasDescribed:)`.
+    public static let axCorroborated = WindowFlags(rawValue: 1 << 1)
     public static let fullScreen     = WindowFlags(rawValue: 1 << 2)
     /// `kAXMain` — the window the app considers its primary one.
     public static let main           = WindowFlags(rawValue: 1 << 3)

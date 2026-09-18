@@ -22,6 +22,9 @@ actor WindowInventory {
     /// windowID → AX element, rebuilt each pass. The raise path re-resolves through
     /// here rather than holding elements in `WindowEntry`, which must stay pure.
     private(set) var elements: [UInt32: AXElementBox] = [:]
+    /// Apps Accessibility described this pass. Needed to interpret a missing
+    /// `.axCorroborated` flag — see `WindowEntry.isLikelyOtherSpace`.
+    private(set) var describedPIDs: Set<pid_t> = []
 
     private var appMRU: [pid_t] = []
     private var windowMRU: [UInt32] = []
@@ -60,6 +63,7 @@ actor WindowInventory {
         diagnostics.append("accessibility: \(axCount) windows across \(axByPID.count) apps in \(ms(clock.now - axStart))")
 
         let windows = merge(shareable: shareable, axByPID: axByPID, apps: apps)
+        describedPIDs = Set(axByPID.filter { !$0.value.isEmpty }.keys)
         elements = Dictionary(
             windows.compactMap { ref in axElement(for: ref, in: axByPID).map { (ref.windowID, $0) } },
             uniquingKeysWith: { first, _ in first }
@@ -76,6 +80,35 @@ actor WindowInventory {
         return InventoryResult(groups: groups, diagnostics: diagnostics)
     }
 
+    /// Diagnostic: every ScreenCaptureKit window grouped by app, with the attributes
+    /// the filter keys on, plus whether Accessibility corroborated it.
+    func dumpRaw() async {
+        let apps = Self.runningApps()
+        let byPID = Dictionary(apps.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
+        guard let shareable = try? await content.refresh() else {
+            print("screencapturekit unavailable")
+            return
+        }
+        let axByPID = await AXWindowReader.readWindows(pids: apps.map(\.pid))
+        var axIDs: Set<CGWindowID> = []
+        for (_, windows) in axByPID { axIDs.formUnion(windows.compactMap(\.windowID)) }
+
+        print("total screencapturekit windows: \(shareable.count)")
+        print("layer histogram: \(Dictionary(grouping: shareable, by: \.layer).mapValues(\.count).sorted { $0.key < $1.key })")
+        print("")
+        for (pid, windows) in Dictionary(grouping: shareable, by: \.pid).sorted(by: { $0.key < $1.key }) {
+            guard let app = byPID[pid] else { continue }
+            print("\(app.localizedName) [pid \(pid)] — \(windows.count) surfaces, ax saw \(axByPID[pid]?.count ?? 0)")
+            for w in windows.sorted(by: { $0.windowID < $1.windowID }) {
+                let size = "\(Int(w.frame.width))x\(Int(w.frame.height))"
+                let pos = "@\(Int(w.frame.origin.x)),\(Int(w.frame.origin.y))"
+                let ax = axIDs.contains(w.windowID) ? "ax" : "--"
+                let screen = w.isOnScreen ? "on" : "off"
+                print("    id \(w.windowID)  layer \(w.layer)  \(ax)  \(screen)  \(size) \(pos)  \"\(w.title)\"")
+            }
+        }
+    }
+
     // MARK: - Merge
 
     private func merge(
@@ -86,10 +119,18 @@ actor WindowInventory {
         let ownPID = ProcessInfo.processInfo.processIdentifier
         let knownPIDs = Set(apps.map(\.pid))
 
+        // ScreenCaptureKit reports ~200 surfaces on an ordinary desktop, of which a
+        // handful are windows a person would switch to. Measured on macOS 27, every
+        // app contributes the same junk: four 1512x33 strips at the origin (menu bar
+        // backing) and a 500x500 or 64x64 helper at y=482. Layer and size cull most
+        // of it; the decisive rule is below.
+        //
+        // `isOnScreen` is deliberately NOT used: it reads false even for plainly
+        // visible frontmost windows.
         let candidates = shareable.filter { window in
             window.pid != ownPID
                 && knownPIDs.contains(window.pid)
-                && window.layer == 0                       // 0 = normal app windows; menus, docks, overlays are higher
+                && window.layer == 0                       // menus, docks, overlays, tooltips all sit higher or lower
                 && window.frame.width >= 64 && window.frame.height >= 64
         }
 
@@ -108,30 +149,41 @@ actor WindowInventory {
         let tabbed = nativeTabWindowIDs(axByPID: axByPID)
         var refs: [WindowEntry] = []
 
+        // Which apps AX described at all. Lets us tell "this window is on another
+        // Space" apart from "AX told us nothing about this app", which look identical
+        // from a single window's point of view.
+        let describedPIDs = Set(axByPID.filter { !$0.value.isEmpty }.keys)
+
         for window in candidates {
             // `_AXUIElementGetWindow` is private; if it ever stops resolving, fall
             // back to matching on geometry and title within the same process.
             let ax = axByWindowID[window.windowID]
                 ?? unmatchedAX[window.pid]?.first { $0.title == window.title && $0.frame.equalish(window.frame) }
 
+            // The decisive filter: a window with no title from either source is not
+            // something a person can pick out of a switcher, and in practice is always
+            // one of the helper surfaces above. Keep it only if AX vouches for it,
+            // since AX sometimes supplies a title ScreenCaptureKit lacks.
+            let resolvedTitle = (ax?.title).flatMap { $0.isEmpty ? nil : $0 } ?? window.title
+            guard !resolvedTitle.isEmpty || ax != nil else { continue }
+
             var flags: WindowFlags = []
             if let ax {
-                flags.insert(.onCurrentSpace)
+                flags.insert(.axCorroborated)
                 if ax.isMinimized { flags.insert(.minimized) }
                 if ax.isMain { flags.insert(.main) }
             }
             if tabbed.contains(window.windowID) { flags.insert(.nativeTab) }
 
-            let title = (ax?.title).flatMap { $0.isEmpty ? nil : $0 } ?? window.title
             refs.append(
                 WindowEntry(
                     windowID: window.windowID,
                     windowNumber: ax?.windowID.map(Int.init),
                     pid: window.pid,
-                    title: title.isEmpty ? "(untitled)" : title,
+                    title: resolvedTitle.isEmpty ? "(untitled)" : resolvedTitle,
                     frame: window.frame,
                     flags: flags,
-                    thumbKey: .weak(ThumbKeyDerivation.weak(pid: window.pid, title: title))
+                    thumbKey: .weak(ThumbKeyDerivation.weak(pid: window.pid, title: resolvedTitle))
                 )
             )
         }
