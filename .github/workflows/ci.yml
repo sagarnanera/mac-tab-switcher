@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    name: TabCore tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test pure core
+        working-directory: Packages/TabCore
+        run: swift test
+
+      # TabCore must never reach for the OS. If it does, its tests stop being runnable
+      # without a GUI session and the Humble Object split has quietly collapsed.
+      - name: Assert TabCore imports nothing OS-facing
+        run: |
+          if grep -rnE '^import (AppKit|Cocoa|ApplicationServices|ScreenCaptureKit|Carbon)' \
+              Packages/TabCore/Sources; then
+            echo "::error::TabCore must stay pure — move OS-facing code to Sources/TabSwitcher"
+            exit 1
+          fi
+
+  app:
+    name: App builds
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift build
