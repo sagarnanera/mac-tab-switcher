@@ -41,6 +41,29 @@ non-interactively instead — this takes your login password:
 security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$(security find-generic-password -w 2>/dev/null || true)" ~/Library/Keychains/login.keychain-db
 ```
 
+### Verifying the fix worked
+
+Do not trust "signed with" alone — check the designated requirement, which is what
+TCC actually keys on:
+
+```bash
+codesign -d -r- build/TabSwitcher.app 2>&1 | grep designated
+```
+
+Good (identity-based, stable across rebuilds):
+
+```
+designated => identifier "dev.nanera.tabswitcher" and certificate leaf = H"62abfda3..."
+```
+
+Bad (ad-hoc, changes on every build — grants will keep evaporating):
+
+```
+designated => identifier "dev.nanera.tabswitcher" and cdhash H"8a5c32f2..."
+```
+
+Rebuild and run it twice. If the two lines differ, the grant will not survive.
+
 ## Granting
 
 1. `bash Scripts/bundle.sh && open build/TabSwitcher.app`
