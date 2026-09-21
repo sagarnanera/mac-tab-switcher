@@ -11,10 +11,18 @@ makes "does dwell fire when it should" a unit test instead of a stopwatch.
    safe, focusing is a deliberate `↓`.
 2. **Dwell only arms for apps with ≥2 windows.** Single-window apps never expand, so
    nothing ever moves under a user's aim for no reason.
-3. **`Tab` always means "next app".** In every state, including with a strip open.
-   That is why moving apps collapses the strip: it belonged to the app you left.
-   A key that means two things depending on invisible state is a key you cannot
-   press quickly.
+3. **The cycle key progressively flattens.** Tap it quickly and it walks apps. Pause
+   on an app with several windows, dwell reveals its strip, and the same key then
+   walks *through those windows* before continuing to the next app.
+
+   An earlier version forbade this, on the grounds that a key whose meaning depends on
+   invisible state cannot be pressed quickly. The state is not invisible: the meaning
+   changes exactly when the strip appears on screen. What the rule cost was that
+   reaching a window required an arrow key — the other hand, away from the modifier —
+   which defeats the point of a switcher.
+
+   Walking off the end continues to the next app rather than wrapping, so the user is
+   never trapped inside one app's windows.
 4. **`↑` leaves the strip but does not hide it.** It is already on screen; removing it
    would make the row jump under someone who is still deciding.
 

@@ -66,13 +66,17 @@ struct DwellTests {
         #expect(!state.showsStrip)
     }
 
-    @Test("moving apps re-arms dwell and collapses the previous strip")
+    @Test("arriving at a new app collapses its strip and re-arms dwell")
     func movingResetsDwell() {
-        var state = Fixture.summoned()
+        var state = Fixture.summoned()                      // Code, 3 windows
         _ = state.apply(.dwellElapsed)
         #expect(state.showsStrip)
 
-        let effects = state.apply(.nextApp)                 // Chrome, 2 windows
+        // Walk off the end of Code's windows and into Chrome.
+        for _ in 0..<3 { _ = state.apply(.nextApp) }
+        let effects = state.apply(.nextApp)
+
+        #expect(state.selectedAppName == "Chrome")
         #expect(!state.showsStrip)
         #expect(effects.contains(.armDwell))
     }
@@ -89,16 +93,77 @@ struct DwellTests {
 @Suite("OverlayStateMachine — navigation")
 struct NavigationTests {
 
-    @Test("Tab always moves between apps, even with a strip open")
-    func tabNeverChangesMeaning() {
-        var state = Fixture.summoned()
-        _ = state.apply(.enterStrip)
-        #expect(state.selection == .grouped(app: 1, window: 0))
+    @Test("tapping without pausing walks apps and never enters a strip")
+    func fastTappingStaysOnApps() {
+        var state = Fixture.summoned()                      // Code
+        _ = state.apply(.nextApp)
+        #expect(state.selectedAppName == "Chrome")
+        _ = state.apply(.nextApp)
+        #expect(state.selectedAppName == "Finder")
+        #expect(!state.showsStrip)
+    }
+
+    @Test("once dwell reveals the strip, the cycle key walks that app's windows")
+    func cycleWalksStripAfterDwell() {
+        var state = Fixture.summoned()                      // Code, 3 windows
+        _ = state.apply(.dwellElapsed)
 
         _ = state.apply(.nextApp)
-        // Not window 1 of Code — the next app.
+        #expect(state.selection == .grouped(app: 1, window: 0))
+        #expect(state.selectedTitle == "api-server")
+
+        _ = state.apply(.nextApp)
+        #expect(state.selectedTitle == "tab-switcher")
+    }
+
+    @Test("walking off the end of a strip continues to the next app, never traps")
+    func cycleFlowsOnPastLastWindow() {
+        var state = Fixture.summoned()                      // Code, 3 windows
+        _ = state.apply(.dwellElapsed)
+        for _ in 0..<3 { _ = state.apply(.nextApp) }        // windows 0, 1, 2
+        #expect(state.selectedTitle == "dotfiles")
+
+        _ = state.apply(.nextApp)
         #expect(state.selectedAppName == "Chrome")
         #expect(state.selection == .grouped(app: 2, window: nil))
+    }
+
+    @Test("reversing off the front of a strip lands on the previous app")
+    func reverseLeavesStripBackwards() {
+        var state = Fixture.summoned()                      // Code
+        _ = state.apply(.dwellElapsed)
+        _ = state.apply(.nextApp)                           // into window 0
+        #expect(state.selection == .grouped(app: 1, window: 0))
+
+        _ = state.apply(.previousApp)
+        #expect(state.selectedAppName == "Finder")
+    }
+
+    @Test("reverse steps back through windows before leaving the app")
+    func reverseWalksStrip() {
+        var state = Fixture.summoned()
+        _ = state.apply(.dwellElapsed)
+        for _ in 0..<3 { _ = state.apply(.nextApp) }        // on window 2
+        _ = state.apply(.previousApp)
+        #expect(state.selectedTitle == "tab-switcher")
+    }
+
+    @Test("a number jump selects that window directly and reveals the strip")
+    func numberJump() {
+        var state = Fixture.summoned()                      // Code, no strip yet
+        let effects = state.apply(.selectWindow(2))
+
+        #expect(state.selection == .grouped(app: 1, window: 2))
+        #expect(state.selectedTitle == "dotfiles")
+        #expect(state.showsStrip)
+        #expect(effects.contains(.cancelDwell))
+    }
+
+    @Test("a number jump beyond the app's windows is ignored")
+    func numberJumpOutOfRange() {
+        var state = Fixture.summoned()
+        #expect(state.apply(.selectWindow(9)).isEmpty)
+        #expect(state.selection == .grouped(app: 1, window: nil))
     }
 
     @Test("apps wrap in both directions")

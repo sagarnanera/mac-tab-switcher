@@ -74,6 +74,7 @@ final class OverlayController: NSObject {
         case .cancel: dispatch(.cancel)
         case .deleteBackward: dispatch(.deleteBackward)
         case .character(let character): dispatch(.typed(character))
+        case .selectWindow(let index): dispatch(.selectWindow(index))
         case .arrow(.down): dispatch(.enterStrip)
         case .arrow(.up): dispatch(.leaveStrip)
         case .arrow(.right): dispatch(.nextWindow)

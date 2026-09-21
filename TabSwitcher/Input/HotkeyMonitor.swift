@@ -20,9 +20,19 @@ struct Hotkey: Sendable, Equatable, Codable {
         .maskCommand, .maskAlternate, .maskControl, .maskShift,
     ]
 
+    /// Whether this event is the cycle chord.
+    ///
+    /// Shift is ignored when comparing, because Shift is the *direction* modifier:
+    /// ⌥⇧Tab must still register as the cycle key so it can reverse. Requiring an exact
+    /// modifier match meant ⌥⇧Tab matched nothing at all and reverse cycling silently
+    /// did nothing. When the user's own shortcut includes Shift there is no direction
+    /// modifier left, so it is compared exactly.
     func matches(keyCode: UInt16, flags: CGEventFlags) -> Bool {
-        self.keyCode == keyCode
-            && flags.intersection(Self.relevantModifiers).rawValue == modifiers
+        guard self.keyCode == keyCode else { return false }
+        let required = CGEventFlags(rawValue: modifiers)
+        let pressed = flags.intersection(Self.relevantModifiers)
+        guard !required.contains(.maskShift) else { return pressed == required }
+        return pressed.subtracting(.maskShift) == required
     }
 
     /// Whether every modifier this hotkey requires is still held.
@@ -38,6 +48,8 @@ enum HotkeyEvent: Sendable {
     case cycleBackward
     case modifiersReleased
     case arrow(Arrow)
+    /// ⌥ plus a digit: jump straight to that window of the selected app.
+    case selectWindow(Int)
     case confirm
     case cancel
     case character(Character)
@@ -136,6 +148,14 @@ final class HotkeyMonitor: @unchecked Sendable {
         }
         guard active else { return Unmanaged.passUnretained(event) }
 
+        // Digits jump directly to a window while the strip is open. Checked before the
+        // character handler so a jump is never mistaken for search input; with the
+        // modifier held these keys produce symbols anyway, not digits.
+        if let index = Self.digitIndex(keyCode) {
+            emit(.selectWindow(index))
+            return nil
+        }
+
         switch Int(keyCode) {
         case kVK_Escape: emit(.cancel); return nil
         case kVK_Return, kVK_ANSI_KeypadEnter: emit(.confirm); return nil
@@ -156,6 +176,16 @@ final class HotkeyMonitor: @unchecked Sendable {
 
     private func emit(_ event: HotkeyEvent) {
         handler?(event)
+    }
+
+    /// Physical digit keys 1-9, by key code rather than by character: the character a
+    /// digit key produces changes with the modifier held and with the keyboard layout.
+    private static func digitIndex(_ keyCode: UInt16) -> Int? {
+        let digits: [Int: Int] = [
+            kVK_ANSI_1: 0, kVK_ANSI_2: 1, kVK_ANSI_3: 2, kVK_ANSI_4: 3, kVK_ANSI_5: 4,
+            kVK_ANSI_6: 5, kVK_ANSI_7: 6, kVK_ANSI_8: 7, kVK_ANSI_9: 8,
+        ]
+        return digits[Int(keyCode)]
     }
 
     private static func character(from event: CGEvent) -> Character? {

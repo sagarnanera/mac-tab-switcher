@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import os
 
@@ -11,6 +12,20 @@ enum Diagnostics {
 
     static func log(_ message: String) {
         logger.notice("\(message, privacy: .public)")
+    }
+
+    /// The full report the Permissions pane copies for a bug report.
+    static func report() -> String {
+        """
+        TabSwitcher diagnostics
+
+        accessibility:    \(AXPermission.isTrusted() ? "granted" : "not granted")
+        screen recording: \(CGPreflightScreenCaptureAccess() ? "granted" : "not granted")
+        secure input:     \(SecureInput.isEnabled ? "active" : "inactive")
+
+        system features:
+        \(capabilityReport())
+        """
     }
 
     static func capabilityReport() -> String {

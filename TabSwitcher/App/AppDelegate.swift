@@ -3,7 +3,7 @@ import CoreGraphics
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let demoMode: Bool
     private var environment: AppEnvironment?
 
@@ -38,6 +38,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // WindowServer refuses synthesised modifier keystrokes, so the overlay cannot
         // be triggered programmatically. This exists so it can still be inspected and
         // screenshotted during development.
+        // Development aid: opening Settings normally goes through the menu bar, which
+        // cannot be driven without Automation permission.
+        if CommandLine.arguments.contains("--settings") {
+            openSettings()
+        }
+
         Task {
             // Long enough for discovery and the thumbnail seed to finish: reporting
             // before the seed made every row look like a capture failure.
@@ -111,7 +117,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
-        menu.addItem(withTitle: "Copy diagnostics", action: #selector(copyDiagnostics), keyEquivalent: "")
         menu.addItem(.separator())
         // Targeted explicitly rather than left to the responder chain: an accessory
         // app whose only window is a non-activating panel has no reliable chain for a
@@ -247,6 +252,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         try? log.write(toFile: "/tmp/tabswitcher-minimized.txt", atomically: true, encoding: .utf8)
     }
 
+    /// Returns to accessory mode once Settings closes, so the app leaves no Dock icon
+    /// behind.
+    func windowWillClose(_ notification: Notification) {
+        guard (notification.object as? NSWindow) === settingsWindow else { return }
+        NSApp.setActivationPolicy(.accessory)
+    }
+
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
     }
@@ -263,14 +275,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openSettings() {
         guard let environment else { return }
+        // An accessory app cannot reliably bring a window to the front — it has no Dock
+        // presence for macOS to activate. Becoming a regular app for as long as the
+        // window is open is the supported way round it; the policy reverts on close so
+        // the Dock icon does not linger.
+        NSApp.setActivationPolicy(.regular)
         if let settingsWindow {
             settingsWindow.makeKeyAndOrderFront(nil)
-            NSApp.activate()
+            NSApp.activate(ignoringOtherApps: true)
             return
         }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 400),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(x: 0, y: 0, width: 720, height: 460),
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -282,10 +299,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.center()
         window.isReleasedWhenClosed = false
+        window.delegate = self
         settingsWindow = window
+        window.center()
         window.makeKeyAndOrderFront(nil)
-        // An accessory app's windows open behind everything unless it activates.
-        NSApp.activate()
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     static let statusReportPath = "/tmp/tabswitcher-status.txt"

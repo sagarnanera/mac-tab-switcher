@@ -11,6 +11,10 @@ struct TileView: View {
     let isSelected: Bool
     /// Shown on app-row tiles when the app has more than one window.
     let windowCount: Int?
+    /// Shown on strip tiles: the digit that jumps straight here. Makes the shortcut
+    /// discoverable instead of hidden, which is the difference between a power feature
+    /// and a secret.
+    var shortcutDigit: Int? = nil
 
     var body: some View {
         VStack(spacing: 6) {
@@ -65,6 +69,14 @@ struct TileView: View {
                         .frame(width: 20, height: 20)
                 }
                 Spacer()
+                if let shortcutDigit {
+                    Text("\(shortcutDigit)")
+                        .font(.caption2.monospacedDigit())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.thinMaterial, in: Capsule())
+                        .accessibilityLabel("Option \(shortcutDigit) to switch here")
+                }
                 if let windowCount, windowCount > 1 {
                     Label("\(windowCount)", systemImage: "square.on.square")
                         .labelStyle(.titleAndIcon)

@@ -21,6 +21,8 @@ public enum OverlayInput: Sendable, Equatable {
     /// ↑ — step back to the app row. The strip stays revealed.
     case leaveStrip
     case dwellElapsed
+    /// Jump straight to the Nth window of the selected app, 0-based.
+    case selectWindow(Int)
     case modifierReleased
     case confirm
     case cancel
@@ -121,10 +123,17 @@ public struct OverlayState: Sendable, Equatable {
             return [.show] + dwellEffects() + [.wantThumbnails(visibleWindows())]
 
         case .nextApp:
-            return moveApp(by: 1)
+            return advance(by: 1)
 
         case .previousApp:
-            return moveApp(by: -1)
+            return advance(by: -1)
+
+        case .selectWindow(let index):
+            guard isVisible, !isFiltering, case .grouped(let app, _) = selection,
+                  let group = selectedApp, group.windows.indices.contains(index) else { return [] }
+            isStripRevealed = group.isExpandable
+            selection = .grouped(app: app, window: index)
+            return [.cancelDwell]
 
         case .nextWindow:
             return moveWindow(by: 1)
@@ -222,15 +231,48 @@ public struct OverlayState: Sendable, Equatable {
         return [.wantThumbnails(visibleWindows())]
     }
 
-    private mutating func moveApp(by delta: Int) -> [OverlayEffect] {
+    /// The cycle key, and the heart of the interaction.
+    ///
+    /// Tap quickly and it walks apps. Pause on an app with several windows and dwell
+    /// reveals its strip — after which the same key walks *through those windows* and
+    /// then continues on to the next app.
+    ///
+    /// This deliberately gives the key two meanings, which an earlier design forbade on
+    /// the grounds that a key whose meaning depends on invisible state cannot be
+    /// pressed quickly. The state is not invisible: the meaning changes exactly when
+    /// the strip appears on screen. What it buys is that the whole interaction is
+    /// reachable by the hand already holding the modifier, instead of requiring the
+    /// other hand to find an arrow key — which was the real cost, since speed is the
+    /// entire point of a switcher.
+    ///
+    /// Walking off the end continues to the next app rather than wrapping inside it, so
+    /// the user is never trapped in one app's windows with no way onward.
+    private mutating func advance(by delta: Int) -> [OverlayEffect] {
         guard isVisible else { return [] }
         if isFiltering { return moveFlat(by: delta) }
         guard !groups.isEmpty else { return [] }
 
-        let next = (currentAppIndex + delta + groups.count) % groups.count
+        if showsStrip, case .grouped(let app, let window) = selection, let group = selectedApp {
+            let next = (window ?? -1) + delta
+            if group.windows.indices.contains(next) {
+                selection = .grouped(app: app, window: next)
+                return [.cancelDwell]
+            }
+            if delta < 0, window == nil || window == 0 {
+                // Stepping back off the front of the strip lands on the app row of the
+                // previous app, not on this app's last window.
+                return moveToApp(app - 1)
+            }
+            return moveToApp(app + delta.signum())
+        }
+        return moveToApp(currentAppIndex + delta)
+    }
+
+    private mutating func moveToApp(_ index: Int) -> [OverlayEffect] {
+        let next = ((index % groups.count) + groups.count) % groups.count
         selection = .grouped(app: next, window: nil)
-        // Tab always means "next app", in every state. Collapsing here is what keeps
-        // that promise: the strip belongs to the app you left.
+        // The strip belongs to the app being left, and arriving somewhere new re-arms
+        // dwell rather than cascading straight into the next app's windows.
         isStripRevealed = false
         return dwellEffects() + [.wantThumbnails(visibleWindows())]
     }

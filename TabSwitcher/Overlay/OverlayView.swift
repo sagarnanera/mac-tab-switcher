@@ -100,7 +100,8 @@ struct OverlayView: View {
                         icon: model.icon(for: group.app),
                         size: layout.tileSize,
                         isSelected: isWindowSelected(index),
-                        windowCount: nil
+                        windowCount: nil,
+                        shortcutDigit: index < 9 ? index + 1 : nil
                     )
                     .contentShape(.rect)
                     .onHover { inside in
@@ -178,12 +179,12 @@ struct OverlayView: View {
             case .flat:
                 Text("↵ switch · esc cancel")
             case .grouped(_, let window) where window != nil:
-                Text("↑ back to apps · ←→ windows · release to switch")
+                Text("⇥ next window · ⌥1-9 jump · ↑ back to apps · release to switch")
             case .grouped:
                 if state.showsStrip {
-                    Text("↓ pick a window · ⇥ next app")
+                    Text("⇥ steps into these windows · ⌥1-9 jump · release to switch")
                 } else if state.selectedApp?.isExpandable == true {
-                    Text("hold to see windows · ↓ now · ⇥ next app")
+                    Text("⇥ next app · pause to see this app's windows")
                 } else {
                     Text("⇥ next app · type to search")
                 }
