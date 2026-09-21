@@ -299,6 +299,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         window.center()
         window.isReleasedWhenClosed = false
+        // macOS otherwise restores the window's last state across launches, so Settings
+        // reopens on whichever pane was last viewed weeks ago rather than at the start.
+        window.isRestorable = false
         window.delegate = self
         settingsWindow = window
         window.center()
