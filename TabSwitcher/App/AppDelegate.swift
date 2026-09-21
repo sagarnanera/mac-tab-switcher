@@ -39,8 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // be triggered programmatically. This exists so it can still be inspected and
         // screenshotted during development.
         Task {
-            // Give the first discovery pass time to land before reporting.
-            try? await Task.sleep(for: .seconds(2))
+            // Long enough for discovery and the thumbnail seed to finish: reporting
+            // before the seed made every row look like a capture failure.
+            try? await Task.sleep(for: .seconds(4))
             await Self.writeStatusReport(environment)
             if demoMode { environment.controller.summonForDemo() }
         }
@@ -168,6 +169,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             \(CGWindowList.candidates().filter { !$0.title.isEmpty }.count) titled
 
             snapshot: \(snapshot.groups.count) apps
+            ([img] = preview cached. Strip windows stay blank until an app is expanded.)
 
             """
         for group in snapshot.groups {

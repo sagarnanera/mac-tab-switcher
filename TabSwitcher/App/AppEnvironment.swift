@@ -40,8 +40,21 @@ final class AppEnvironment {
             }
             await store.refresh()
             await thumbnails.evictIfNeeded()
+            await seedThumbnails()
         }
         Diagnostics.log("private API availability:\n\(Diagnostics.capabilityReport())")
+    }
+
+    /// Captures each app's frontmost window shortly after launch, so the first summon
+    /// shows previews instead of a grid of icons that fill in afterwards.
+    ///
+    /// Cheap — one capture per app, not per window — and it happens while the user is
+    /// doing something else. Windows in the strip stay lazy: they are only worth
+    /// capturing once an app is actually expanded.
+    private func seedThumbnails() async {
+        let snapshot = await store.current
+        await thumbnails.warm(snapshot.groups.map(\.frontmost))
+        model.thumbnailGeneration &+= 1
     }
 
     /// Called at launch and whenever a setting changes. Grouping options live in the
