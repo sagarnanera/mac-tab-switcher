@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- The three unchosen panes. Opacity lives here rather than in icon.json, whose
+       layer schema has no fill key — actool crashes outright on an unknown one. -->
+  <g fill="#FFFFFF" fill-opacity="0.26">
+    <rect x="160" y="544" width="320" height="232" rx="44"/>
+    <rect x="544" y="544" width="320" height="232" rx="44"/>
+    <rect x="544" y="248" width="320" height="232" rx="44"/>
+  </g>
+</svg>

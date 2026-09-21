@@ -101,31 +101,31 @@ enum PrivateAPI {
         pid_t, UnsafeMutablePointer<ProcessSerialNumber>
     ) -> OSStatus
 
-    private nonisolated(unsafe) static let connectionFn: ConnectionFn? =
+    private static let connectionFn: ConnectionFn? =
         symbol("CGSMainConnectionID").map { unsafeBitCast($0, to: ConnectionFn.self) }
-    private nonisolated(unsafe) static let captureFn: CaptureFn? =
+    private static let captureFn: CaptureFn? =
         symbol("CGSHWCaptureWindowList").map { unsafeBitCast($0, to: CaptureFn.self) }
-    private nonisolated(unsafe) static let spacesForWindowsFn: SpacesForWindowsFn? =
+    private static let spacesForWindowsFn: SpacesForWindowsFn? =
         symbol("CGSCopySpacesForWindows").map { unsafeBitCast($0, to: SpacesForWindowsFn.self) }
-    private nonisolated(unsafe) static let managedSpacesFn: ManagedSpacesFn? =
+    private static let managedSpacesFn: ManagedSpacesFn? =
         symbol("CGSCopyManagedDisplaySpaces").map { unsafeBitCast($0, to: ManagedSpacesFn.self) }
-    private nonisolated(unsafe) static let getWindowFn: GetWindowFn? =
+    private static let getWindowFn: GetWindowFn? =
         symbol("_AXUIElementGetWindow").map { unsafeBitCast($0, to: GetWindowFn.self) }
-    private nonisolated(unsafe) static let setFrontProcessFn: SetFrontProcessFn? =
+    private static let setFrontProcessFn: SetFrontProcessFn? =
         symbol("_SLPSSetFrontProcessWithOptions").map { unsafeBitCast($0, to: SetFrontProcessFn.self) }
-    private nonisolated(unsafe) static let postEventFn: PostEventFn? =
+    private static let postEventFn: PostEventFn? =
         symbol("SLPSPostEventRecordTo").map { unsafeBitCast($0, to: PostEventFn.self) }
-    private nonisolated(unsafe) static let remoteTokenFn: RemoteTokenFn? =
+    private static let remoteTokenFn: RemoteTokenFn? =
         symbol("_AXUIElementCreateWithRemoteToken").map { unsafeBitCast($0, to: RemoteTokenFn.self) }
 
     /// Swift marks `GetProcessForPID` unavailable (deprecated before 10.9), but the
     /// private front-process calls below take a `ProcessSerialNumber` and nothing
     /// modern produces one. The symbol is still exported, so it is resolved the same
     /// way as everything else here.
-    private nonisolated(unsafe) static let processForPIDFn: ProcessForPIDFn? =
+    private static let processForPIDFn: ProcessForPIDFn? =
         symbol("GetProcessForPID").map { unsafeBitCast($0, to: ProcessForPIDFn.self) }
 
-    private nonisolated(unsafe) static let connection: CGSConnectionID? = connectionFn?()
+    private static let connection: CGSConnectionID? = connectionFn?()
 
     private static func processSerialNumber(for pid: pid_t) -> ProcessSerialNumber? {
         guard let processForPIDFn else { return nil }

@@ -1,0 +1,39 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "srgb:0.451,0.380,0.969,1.0",
+      "srgb:0.239,0.169,0.659,1.0"
+    ],
+    "orientation" : {
+      "start" : { "x" : 0.5, "y" : 0 },
+      "stop" : { "x" : 0.5, "y" : 1 }
+    }
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "tiles-dim.svg",
+          "name" : "Unselected panes"
+        }
+      ],
+      "shadow" : { "kind" : "neutral", "opacity" : 0.25 },
+      "specular" : false,
+      "translucency" : { "enabled" : true, "value" : 0.4 }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "tile-chosen.svg",
+          "name" : "Selected pane"
+        }
+      ],
+      "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
+      "specular" : true,
+      "translucency" : { "enabled" : false, "value" : 0 }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}

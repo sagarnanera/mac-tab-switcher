@@ -228,6 +228,9 @@
 		A1000000000000000000B0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				/* The layered icon macOS 26+ composites itself, alongside the rasterised
+				   appiconset that macOS 14-25 needs. */
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = TabSwitcher/TabSwitcher.entitlements;
 				/* Xcode splits Debug builds into an app shim plus a .debug.dylib for
 				   faster incremental builds. The dylib is signed separately, so with a
@@ -257,6 +260,9 @@
 		A1000000000000000000B1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				/* The layered icon macOS 26+ composites itself, alongside the rasterised
+				   appiconset that macOS 14-25 needs. */
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = TabSwitcher/TabSwitcher.entitlements;
 				/* Xcode splits Debug builds into an app shim plus a .debug.dylib for
 				   faster incremental builds. The dylib is signed separately, so with a

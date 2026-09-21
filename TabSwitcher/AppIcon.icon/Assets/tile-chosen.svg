@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- The selected pane. Deliberately breaks the grid — larger and lifted — so the
+       "one of these is chosen" idea survives at 16pt, where a selection ring or a
+       difference in fill alone disappears entirely. -->
+  <rect x="133" y="221" width="374" height="286" rx="52" fill="#FFFFFF"/>
+</svg>

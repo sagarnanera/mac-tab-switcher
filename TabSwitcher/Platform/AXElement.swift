@@ -105,3 +105,9 @@ enum AXPermission {
         AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": prompting] as CFDictionary)
     }
 }
+
+/// Marker for the plain C structs `AXValue` can box, so the accessor above cannot be
+/// instantiated with a type containing references.
+protocol AXValueStruct {}
+extension CGPoint: AXValueStruct {}
+extension CGSize: AXValueStruct {}

@@ -84,10 +84,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        let image = NSImage(
-            systemSymbolName: "square.stack.3d.up", accessibilityDescription: "TabSwitcher"
-        )
+        // A dedicated glyph, not the app icon shrunk down: the menu bar is monochrome
+        // and 18pt, where a detailed colour icon turns to mush. Template rendering lets
+        // macOS own the colour so it adapts to light, dark and accent tinting.
+        let image = NSImage(named: "MenuBarIcon")
+            ?? NSImage(systemSymbolName: "square.stack.3d.up", accessibilityDescription: nil)
         image?.isTemplate = true
+        image?.accessibilityDescription = "TabSwitcher"
         item.button?.image = image
         // Survives a menu bar so crowded that the icon is pushed under the notch: the
         // item stays in the overflow list and can still be reached, and the tooltip
@@ -340,7 +343,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         for group in snapshot.groups {
             report += "\(group.app.name) (\(group.windows.count))\n"
             for window in group.windows {
-                let thumb = await environment.thumbnails.cached(window.thumbKey) != nil ? "img" : "---"
+                let thumb = environment.thumbnails.cached(window.thumbKey) != nil ? "img" : "---"
                 report += "    [\(thumb)] \(window.title)\n"
             }
         }
