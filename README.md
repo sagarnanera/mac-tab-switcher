@@ -30,6 +30,18 @@ dialog:
 build/TabSwitcher.app/Contents/MacOS/TabSwitcher --diagnose
 ```
 
+## Quitting it
+
+TabSwitcher is a menu bar agent with no Dock icon, so there are three ways out:
+
+- the **stacked-squares icon** in the menu bar → Quit TabSwitcher
+- Settings → Quit TabSwitcher
+- `bash Scripts/quit.sh`
+
+The last one exists on purpose. A menu bar item can end up unreachable — pushed under
+the notch on a crowded menu bar — and an app you cannot quit is worse than one that
+does not run.
+
 ## Keys
 
 | Key | Action |

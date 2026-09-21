@@ -62,10 +62,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func installStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        let image = NSImage(
             systemSymbolName: "square.stack.3d.up", accessibilityDescription: "TabSwitcher"
         )
+        image?.isTemplate = true
+        item.button?.image = image
+        // Survives a menu bar so crowded that the icon is pushed under the notch: the
+        // item stays in the overflow list and can still be reached, and the tooltip
+        // names it when it is.
+        item.button?.toolTip = "TabSwitcher"
+        item.behavior = []
+        item.isVisible = true
         statusItem = item
         refreshStatusItem()
     }
@@ -90,11 +98,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(withTitle: "Copy diagnostics", action: #selector(copyDiagnostics), keyEquivalent: "")
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit TabSwitcher", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        for menuItem in menu.items where menuItem.action != nil && menuItem.action != #selector(NSApplication.terminate(_:)) {
+        // Targeted explicitly rather than left to the responder chain: an accessory
+        // app whose only window is a non-activating panel has no reliable chain for a
+        // nil-target menu item to travel up.
+        menu.addItem(withTitle: "Quit TabSwitcher", action: #selector(quit), keyEquivalent: "q")
+        for menuItem in menu.items where menuItem.action != nil {
             menuItem.target = self
         }
         item.menu = menu
+    }
+
+    @objc private func quit() {
+        NSApplication.shared.terminate(nil)
     }
 
     @objc private func openAccessibilitySettings() {

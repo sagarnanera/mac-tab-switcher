@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import SwitcherCore
 
@@ -43,6 +44,19 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                }
+            }
+
+            Section {
+                HStack {
+                    Text("TabSwitcher runs in the menu bar with no Dock icon.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    // A second way out. The menu bar item can be unreachable on a
+                    // crowded or notched display, and an agent app has no Dock icon to
+                    // fall back on.
+                    Button("Quit TabSwitcher") { NSApplication.shared.terminate(nil) }
                 }
             }
 
