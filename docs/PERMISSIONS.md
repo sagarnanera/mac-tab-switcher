@@ -1,75 +1,50 @@
 # Permissions
 
-TabSwitcher needs two, and neither can be worked around.
-
 | Permission | Needed for | Without it |
 |---|---|---|
-| **Accessibility** | window titles, minimized/main state, native tabs, and raising a window | the switcher can see that windows exist but cannot label or switch to them |
-| **Screen Recording** | window thumbnails | falls back to app icons; everything else keeps working |
+| **Screen Recording** | window thumbnails, and window *titles* from the Window Server | tiles fall back to app icons |
+| **Accessibility** | minimized/main state, native tab detection, and the element used to raise a window reliably | switching still works through the private front-process call; titles still come from the Window Server |
 
-Both are granted to the **.app bundle**, not to the `swift build` binary. Always
-launch `build/TabSwitcher.app`.
+Neither is fatal on its own, which is deliberate: a switcher that stops working because
+a monthly consent dialog was dismissed is worse than one that loses its previews.
+
+Both are granted to the **`.app` bundle**, never to a bare binary.
 
 ## Why signing matters more than it looks
 
-macOS keys a TCC grant to the app's code signature — specifically its designated
-requirement. For an **ad-hoc** signature that requirement is the cdhash, which changes
-on every single build. The symptom is nasty because it is silent: the Accessibility
-toggle stays visibly ON while every AX call returns `kAXErrorAPIDisabled`.
+macOS keys a TCC grant to the app's code signature — specifically its *designated
+requirement*. For an ad-hoc signature that requirement is the cdhash, which changes on
+every single build. The symptom is nasty because it is silent: the Accessibility toggle
+stays visibly ON while every call returns `kAXErrorAPIDisabled`.
 
-`Scripts/make-signing-identity.sh` creates a stable self-signed identity so grants
-survive rebuilds. Run it once.
+`Scripts/setup.sh` creates a stable self-signed identity so grants survive rebuilds.
+Run it once.
 
-The identity reports `CSSMERR_TP_NOT_TRUSTED` and is hidden by
-`security find-identity -v`. That is expected and harmless: trust is a Gatekeeper
-concern, i.e. a distribution concern. TCC only cares that the signature is stable.
+The identity reports `CSSMERR_TP_NOT_TRUSTED` and is hidden by `security find-identity -v`.
+That is expected: trust is a Gatekeeper concern, i.e. a *distribution* concern. TCC only
+requires that the signature be stable.
 
-### One-time keychain authorization
+### Verifying it took effect
 
-The first `codesign` against a freshly imported identity needs permission to use its
-private key. Run the bundler **from your own Terminal** (not from an automated
-session) so the keychain dialog can appear, and click **Always Allow**:
-
-```bash
-bash Scripts/bundle.sh
-```
-
-If it fails with `errSecInternalComponent`, the dialog never appeared. Authorize
-non-interactively instead — this takes your login password:
-
-```bash
-security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$(security find-generic-password -w 2>/dev/null || true)" ~/Library/Keychains/login.keychain-db
-```
-
-### Verifying the fix worked
-
-Do not trust "signed with" alone — check the designated requirement, which is what
-TCC actually keys on:
+Do not trust "signed with" — check the requirement TCC actually keys on:
 
 ```bash
 codesign -d -r- build/TabSwitcher.app 2>&1 | grep designated
 ```
 
-Good (identity-based, stable across rebuilds):
+Good — identity-based, identical across rebuilds:
 
 ```
 designated => identifier "dev.nanera.tabswitcher" and certificate leaf = H"62abfda3..."
 ```
 
-Bad (ad-hoc, changes on every build — grants will keep evaporating):
+Bad — ad-hoc, changes every build, grants keep evaporating:
 
 ```
-designated => identifier "dev.nanera.tabswitcher" and cdhash H"8a5c32f2..."
+designated => identifier "dev.nanera.tabswitcher" and cdhash H"a9295b18..."
 ```
 
-Rebuild and run it twice. If the two lines differ, the grant will not survive.
-
-## Granting
-
-1. `bash Scripts/bundle.sh && open build/TabSwitcher.app`
-2. Accept the Accessibility prompt, or add the app manually:
-   System Settings → Privacy & Security → Accessibility
-3. For thumbnails (Phase 3): System Settings → Privacy & Security → Screen Recording
+Build twice and compare. If the lines differ, grants will not survive.
 
 ## Resetting during development
 
@@ -78,9 +53,16 @@ tccutil reset Accessibility dev.nanera.tabswitcher
 tccutil reset ScreenCapture dev.nanera.tabswitcher
 ```
 
-## Known ongoing friction
+## Ongoing friction
 
-macOS re-prompts for Screen Recording roughly **monthly**. Notarization does not
-exempt an app; the `com.apple.developer.persistent-content-capture` entitlement is
-the only exemption and is not realistically obtainable for a utility. The app is built
-to degrade to icons whenever the grant lapses, rather than to break.
+macOS re-prompts for Screen Recording roughly **monthly**. Notarization does not exempt
+an app; `com.apple.developer.persistent-content-capture` is the only exemption and is
+not realistically obtainable for a utility. The app degrades to icons each time and
+keeps working.
+
+## Secure input
+
+While any process holds secure input — a password field, 1Password, sometimes a
+terminal that leaked it — macOS filters key events out of every event tap system-wide.
+Typing to search stops working. Modifier tracking does not, so `⌥Tab` cycling still
+works. The overlay says so explicitly rather than appearing broken.

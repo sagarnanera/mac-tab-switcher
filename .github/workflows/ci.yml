@@ -7,27 +7,50 @@ on:
 
 jobs:
   core:
-    name: TabCore tests
+    name: SwitcherCore tests
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Test pure core
-        working-directory: Packages/TabCore
+
+      # Runs with no GUI session, no permissions and no Xcode project. That this is
+      # possible at all is the point of keeping the logic in its own package.
+      - name: Test
+        working-directory: Packages/SwitcherCore
         run: swift test
 
-      # TabCore must never reach for the OS. If it does, its tests stop being runnable
-      # without a GUI session and the Humble Object split has quietly collapsed.
-      - name: Assert TabCore imports nothing OS-facing
+      - name: Assert the core stays pure
         run: |
-          if grep -rnE '^import (AppKit|Cocoa|ApplicationServices|ScreenCaptureKit|Carbon)' \
-              Packages/TabCore/Sources; then
-            echo "::error::TabCore must stay pure — move OS-facing code to Sources/TabSwitcher"
+          if grep -rnE '^import (AppKit|Cocoa|SwiftUI|ApplicationServices|ScreenCaptureKit|Carbon)' \
+              Packages/SwitcherCore/Sources; then
+            echo "::error::SwitcherCore must not import OS frameworks — move it to TabSwitcher/"
             exit 1
           fi
+
+      # Every private symbol must stay behind the one file that dlsym-guards it.
+      # Comment lines are stripped first: other files are expected to *name* these
+      # symbols in documentation explaining why a fallback exists.
+      - name: Assert private APIs stay in the firewall
+        run: |
+          offenders=$(
+            grep -rn 'CGSHWCaptureWindowList\|_SLPSSetFrontProcess\|_AXUIElementGetWindow\|SLPSPostEventRecordTo\|_AXUIElementCreateWithRemoteToken\|CGSCopySpacesForWindows\|CGSCopyManagedDisplaySpaces\|_AXUIElementCreateWithRemoteToken' \
+              TabSwitcher --include='*.swift' \
+              | grep -v 'Platform/PrivateAPI.swift' \
+              | grep -vE ':[[:space:]]*(//|\*)' || true
+          )
+          if [ -n "$offenders" ]; then
+            echo "$offenders"
+            echo "::error::private symbols may only be called from Platform/PrivateAPI.swift"
+            exit 1
+          fi
+
+      - name: Assert strict concurrency is still on
+        run: grep -q 'SWIFT_STRICT_CONCURRENCY = complete' TabSwitcher.xcodeproj/project.pbxproj
 
   app:
     name: App builds
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - run: swift build
+      - run: |
+          xcodebuild -project TabSwitcher.xcodeproj -scheme TabSwitcher \
+            -configuration Release CODE_SIGNING_ALLOWED=NO build

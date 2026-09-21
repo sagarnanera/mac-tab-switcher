@@ -1,0 +1,310 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A100000000000000000001 /* TabSwitcher */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A100000000000000000002 /* Exceptions for "TabSwitcher" folder */,
+			);
+			path = TabSwitcher;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A100000000000000000002 /* Exceptions for "TabSwitcher" folder */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			/* Both are consumed by build settings (INFOPLIST_FILE,
+			   CODE_SIGN_ENTITLEMENTS), so copying them into the bundle as resources
+			   would ship a duplicate Info.plist. */
+			membershipExceptions = (
+				Info.plist,
+				TabSwitcher.entitlements,
+			);
+			target = A100000000000000000060 /* TabSwitcher */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileReference section */
+		A100000000000000000010 /* TabSwitcher.app */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			includeInIndex = 0;
+			path = TabSwitcher.app;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXFileReference section */
+
+/* Begin PBXBuildFile section */
+		A100000000000000000020 /* SwitcherCore in Frameworks */ = {
+			isa = PBXBuildFile;
+			productRef = A100000000000000000030 /* SwitcherCore */;
+		};
+/* End PBXBuildFile section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A100000000000000000040 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A100000000000000000020 /* SwitcherCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A100000000000000000041 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A100000000000000000042 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXGroup section */
+		A100000000000000000050 = {
+			isa = PBXGroup;
+			children = (
+				A100000000000000000001 /* TabSwitcher */,
+				A100000000000000000051 /* Packages */,
+				A100000000000000000052 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A100000000000000000051 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		A100000000000000000052 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A100000000000000000010 /* TabSwitcher.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A100000000000000000060 /* TabSwitcher */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A100000000000000000070 /* Build configuration list for PBXNativeTarget "TabSwitcher" */;
+			buildPhases = (
+				A100000000000000000041 /* Sources */,
+				A100000000000000000040 /* Frameworks */,
+				A100000000000000000042 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A100000000000000000001 /* TabSwitcher */,
+			);
+			name = TabSwitcher;
+			packageProductDependencies = (
+				A100000000000000000030 /* SwitcherCore */,
+			);
+			productName = TabSwitcher;
+			productReference = A100000000000000000010 /* TabSwitcher.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A100000000000000000080 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					A100000000000000000060 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+				};
+			};
+			buildConfigurationList = A100000000000000000090 /* Build configuration list for PBXProject "TabSwitcher" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A100000000000000000050;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A100000000000000000031 /* XCLocalSwiftPackageReference "Packages/SwitcherCore" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A100000000000000000052 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A100000000000000000060 /* TabSwitcher */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A100000000000000000031 /* XCLocalSwiftPackageReference "Packages/SwitcherCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SwitcherCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A100000000000000000030 /* SwitcherCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SwitcherCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A1000000000000000000A0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A1000000000000000000A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A1000000000000000000B0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TabSwitcher/TabSwitcher.entitlements;
+				/* Xcode splits Debug builds into an app shim plus a .debug.dylib for
+				   faster incremental builds. The dylib is signed separately, so with a
+				   manual signing identity dyld rejects it for a Team ID mismatch — and
+				   a stable signature is exactly what keeps TCC grants alive here. */
+				ENABLE_DEBUG_DYLIB = NO;
+				CODE_SIGN_IDENTITY = "TabSwitcher Dev";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TabSwitcher/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.nanera.tabswitcher;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		A1000000000000000000B1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TabSwitcher/TabSwitcher.entitlements;
+				/* Xcode splits Debug builds into an app shim plus a .debug.dylib for
+				   faster incremental builds. The dylib is signed separately, so with a
+				   manual signing identity dyld rejects it for a Team ID mismatch — and
+				   a stable signature is exactly what keeps TCC grants alive here. */
+				ENABLE_DEBUG_DYLIB = NO;
+				CODE_SIGN_IDENTITY = "TabSwitcher Dev";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TabSwitcher/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.nanera.tabswitcher;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A100000000000000000090 /* Build configuration list for PBXProject "TabSwitcher" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000000000000000000A0 /* Debug */,
+				A1000000000000000000A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A100000000000000000070 /* Build configuration list for PBXNativeTarget "TabSwitcher" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000000000000000000B0 /* Debug */,
+				A1000000000000000000B1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A100000000000000000080 /* Project object */;
+}

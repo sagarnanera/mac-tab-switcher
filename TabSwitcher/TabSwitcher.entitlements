@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Unsandboxed by necessity: the sandbox blocks the accessibility and window
+         capture access this app is entirely built on, and the temporary exceptions
+         that would allow it are not grantable for a utility like this. -->
+    <key>com.apple.security.app-sandbox</key><false/>
+</dict>
+</plist>
