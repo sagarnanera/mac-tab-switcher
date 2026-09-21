@@ -48,6 +48,15 @@ final class WelcomeWindowController: NSObject, NSWindowDelegate {
         window.contentView = NSHostingView(rootView: WelcomeView(model: model) { [weak self] in
             self?.window?.close()
         })
+        // After the content view is installed: setting this earlier is undone when the
+        // titlebar's accessory view is rebuilt.
+        //
+        // The window is neither resizable nor minimizable, so both buttons are
+        // permanently dead. A control that looks pressable and does nothing is worse
+        // than no control, so they are removed rather than left greyed out.
+        window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        window.standardWindowButton(.zoomButton)?.isHidden = true
+
         self.window = window
         present(window)
     }

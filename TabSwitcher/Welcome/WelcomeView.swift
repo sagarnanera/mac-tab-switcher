@@ -149,13 +149,10 @@ struct WelcomeView: View {
     }
 
     private var footer: some View {
-        HStack {
-            if !model.isFirstStep {
-                Button("Back") { model.goBack() }
-            }
-            Spacer()
-            // A step indicator, so the flow has a visible length rather than feeling
-            // open-ended.
+        ZStack {
+            // Centred across the whole width. Laying this out as spacer-dots-spacer-
+            // button instead centres the dots in the space *left of* the button, which
+            // pulls them off-centre by half the button's width — visibly so.
             HStack(spacing: 6) {
                 ForEach(WelcomeModel.Step.allCases, id: \.rawValue) { step in
                     Circle()
@@ -163,27 +160,31 @@ struct WelcomeView: View {
                         .frame(width: 7, height: 7)
                 }
             }
-            .accessibilityLabel("Step \(model.step.rawValue + 1) of \(WelcomeModel.Step.allCases.count)")
-            Spacer()
-            // Skip is always available: none of this is required for the app to work,
-            // so trapping someone in it would be wrong.
-            if model.isLastStep {
-                Button("Done", action: onFinish).keyboardShortcut(.defaultAction)
-            } else {
-                Button("Continue") { model.advance() }.keyboardShortcut(.defaultAction)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(
+                "Step \(model.step.rawValue + 1) of \(WelcomeModel.Step.allCases.count)")
+
+            HStack(spacing: 14) {
+                if !model.isFirstStep {
+                    Button("Back") { model.goBack() }
+                }
+                // Available on every step, not just the first: none of this is required
+                // for the app to work, so there is always a way out that is not closing
+                // the window.
+                if !model.isLastStep {
+                    Button("Skip", action: onFinish).buttonStyle(.link)
+                }
+                Spacer()
+                if model.isLastStep {
+                    Button("Done", action: onFinish).keyboardShortcut(.defaultAction)
+                } else {
+                    Button("Continue") { model.advance() }.keyboardShortcut(.defaultAction)
+                }
             }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 18)
         .background(.bar)
-        .overlay(alignment: .topLeading) {
-            if !model.isLastStep {
-                Button("Skip", action: onFinish)
-                    .buttonStyle(.link)
-                    .padding(.leading, 24)
-                    .padding(.top, 19)
-                    .opacity(model.isFirstStep ? 1 : 0)
-            }
-        }
+        .overlay(alignment: .top) { Divider() }
     }
 }
