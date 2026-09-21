@@ -20,6 +20,7 @@ final class Preferences {
         static let bestQualityThumbnails = "bestQualityThumbnails"
         static let hotkey = "hotkey"
         static let showsKeyboardHints = "showsKeyboardHints"
+        static let hasSeenWelcome = "hasSeenWelcome"
     }
 
     static let currentVersion = 1
@@ -134,6 +135,13 @@ final class Preferences {
             || !bestQualityThumbnails
             || !showsKeyboardHints
             || hotkey != .default
+    }
+
+    /// Deliberately outside the defaults list: restoring defaults should not replay
+    /// the first-run flow at someone who has already been through it.
+    var hasSeenWelcome: Bool {
+        get { defaults.bool(forKey: Key.hasSeenWelcome) }
+        set { defaults.set(newValue, forKey: Key.hasSeenWelcome) }
     }
 
     var dwellPolicy: DwellPolicy {

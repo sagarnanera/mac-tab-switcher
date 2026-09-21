@@ -65,13 +65,18 @@ struct HotkeyRecorder: View {
     }
 
     static func describe(_ hotkey: Hotkey) -> String {
+        describeModifiers(hotkey) + keyName(hotkey.keyCode)
+    }
+
+    /// Just the modifiers, for copy that talks about holding them.
+    static func describeModifiers(_ hotkey: Hotkey) -> String {
         let flags = CGEventFlags(rawValue: hotkey.modifiers)
         var text = ""
         if flags.contains(.maskControl) { text += "⌃" }
         if flags.contains(.maskAlternate) { text += "⌥" }
         if flags.contains(.maskShift) { text += "⇧" }
         if flags.contains(.maskCommand) { text += "⌘" }
-        return text + keyName(hotkey.keyCode)
+        return text
     }
 
     private static func keyName(_ keyCode: UInt16) -> String {

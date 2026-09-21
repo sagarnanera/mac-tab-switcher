@@ -28,6 +28,9 @@ final class AppEnvironment {
         observers = WindowObservers(store: store)
     }
 
+    var hotkeyDescription: String { HotkeyRecorder.describe(preferences.hotkey) }
+    var modifierDescription: String { HotkeyRecorder.describeModifiers(preferences.hotkey) }
+
     func start() {
         applyPreferences()
         controller.start()

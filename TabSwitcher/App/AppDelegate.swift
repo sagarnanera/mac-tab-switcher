@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
+    private var welcome: WelcomeWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // A switcher has no business in the Dock or the app switcher it replaces.
@@ -24,9 +25,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // a permission dialog. The prompt is fired once, and a grant arriving later is
         // picked up by the poll below.
         launch()
-        if !AXPermission.isTrusted(prompting: true) {
+
+        // First run gets the guided flow, which asks for Accessibility in context.
+        // Afterwards the bare system prompt is enough, since the user has already been
+        // told what it is for.
+        if let environment, !environment.preferences.hasSeenWelcome {
+            showWelcome()
+        } else if !AXPermission.isTrusted(prompting: true) {
             watchForAccessibilityGrant()
         }
+        if !AXPermission.isTrusted() {
+            watchForAccessibilityGrant()
+        }
+    }
+
+    @objc private func showWelcome() {
+        guard let environment else { return }
+        if welcome == nil {
+            let controller = WelcomeWindowController(
+                hotkeyDescription: environment.hotkeyDescription,
+                modifierDescription: environment.modifierDescription
+            ) { [weak self] in
+                self?.environment?.preferences.hasSeenWelcome = true
+                self?.refreshStatusItem()
+            }
+            // Lets the last step confirm the shortcut really summons the overlay.
+            environment.controller.onSummon = { [weak controller] in
+                controller?.noteOverlayAppeared()
+            }
+            welcome = controller
+        }
+        let requested = CommandLine.arguments
+            .firstIndex(of: "--welcome-step")
+            .flatMap { CommandLine.arguments.indices.contains($0 + 1) ? Int(CommandLine.arguments[$0 + 1]) : nil }
+            .flatMap(WelcomeModel.Step.init(rawValue:))
+        welcome?.show(startingAt: requested)
     }
 
     private func launch() {
@@ -92,6 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         image?.isTemplate = true
         image?.accessibilityDescription = "TabSwitcher"
         item.button?.image = image
+        item.button?.toolTip = "TabSwitcher"
         // Survives a menu bar so crowded that the icon is pushed under the notch: the
         // item stays in the overflow list and can still be reached, and the tooltip
         // names it when it is.
@@ -106,6 +140,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// menu says which are missing and what that costs rather than demanding them.
     private func refreshStatusItem() {
         guard let item = statusItem else { return }
+
+        // A lapsed permission gets a badge rather than a window. macOS re-prompts for
+        // Screen Recording roughly monthly, and a setup window reappearing unbidden a
+        // month later would be worse than the lapse it is reporting.
+        let missing = !AXPermission.isTrusted() || !CGPreflightScreenCaptureAccess()
+        item.button?.toolTip = missing
+            ? "TabSwitcher — a permission is missing"
+            : "TabSwitcher"
+        if #available(macOS 14, *) {
+            item.button?.contentTintColor = missing ? .systemOrange : nil
+        }
+
         let menu = NSMenu()
         if !AXPermission.isTrusted() {
             menu.addItem(withTitle: "Accessibility off — no minimized or tab detection",
@@ -119,6 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             menu.addItem(withTitle: "All permissions granted", action: nil, keyEquivalent: "")
         }
         menu.addItem(.separator())
+        menu.addItem(withTitle: "Setup guide…", action: #selector(showWelcome), keyEquivalent: "")
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(.separator())
         // Targeted explicitly rather than left to the responder chain: an accessory

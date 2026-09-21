@@ -27,6 +27,9 @@ final class OverlayController: NSObject {
     /// edge keeps the row exactly where it was.
     private var anchorTop: CGFloat?
     private var policy = DwellPolicy.default
+    /// Fired whenever the overlay is shown. The welcome flow uses it to confirm the
+    /// shortcut actually works, rather than telling the user it does and hoping.
+    var onSummon: (() -> Void)?
 
     init(
         model: OverlayModel,
@@ -105,6 +108,7 @@ final class OverlayController: NSObject {
         case .show:
             hotkeys.setSessionActive(true)
             show()
+            onSummon?()
 
         case .hide:
             hotkeys.setSessionActive(false)

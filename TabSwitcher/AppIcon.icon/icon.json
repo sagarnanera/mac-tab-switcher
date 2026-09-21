@@ -9,6 +9,21 @@
       "stop" : { "x" : 0.5, "y" : 1 }
     }
   },
+  "fill-specializations" : [
+    {
+      "appearance" : "dark",
+      "value" : {
+        "linear-gradient" : [
+          "srgb:0.361,0.294,0.878,1.0",
+          "srgb:0.161,0.110,0.482,1.0"
+        ],
+        "orientation" : {
+          "start" : { "x" : 0.5, "y" : 0 },
+          "stop" : { "x" : 0.5, "y" : 1 }
+        }
+      }
+    }
+  ],
   "groups" : [
     {
       "layers" : [
