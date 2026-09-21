@@ -8,6 +8,29 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Shortcut") {
+                HStack {
+                    Text("Summon")
+                    Spacer()
+                    HotkeyRecorder(hotkey: $preferences.hotkey)
+                }
+                Text("Hold the modifier and tap the key to cycle; release to switch.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("General") {
+                Toggle("Launch at login", isOn: $preferences.launchAtLogin)
+                if LaunchAtLogin.needsApproval {
+                    Text("Waiting for approval in System Settings → General → Login Items.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                if let error = preferences.launchAtLoginError {
+                    Text(error).font(.caption).foregroundStyle(.red)
+                }
+            }
+
             Section("Appearance") {
                 VStack(alignment: .leading) {
                     Slider(value: $preferences.tileWidth, in: 120...400, step: 10) {
@@ -77,5 +100,6 @@ struct SettingsView: View {
         .onChange(of: preferences.breakOutNativeTabs) { _, _ in onChange() }
         .onChange(of: preferences.includeMinimized) { _, _ in onChange() }
         .onChange(of: preferences.bestQualityThumbnails) { _, _ in onChange() }
+        .onChange(of: preferences.hotkey) { _, _ in onChange() }
     }
 }

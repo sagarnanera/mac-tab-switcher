@@ -43,9 +43,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // before the seed made every row look like a capture failure.
             try? await Task.sleep(for: .seconds(4))
             await Self.writeStatusReport(environment)
-            if demoMode { environment.controller.summonForDemo() }
+            if demoMode {
+                environment.controller.summonForDemo()
+                // Reveals the strip a few seconds later so the collapsed and expanded
+                // layouts can be compared: the app row must not move between them.
+                if CommandLine.arguments.contains("--demo-strip") {
+                    try? await Task.sleep(for: .seconds(4))
+                    environment.controller.revealStripForDemo()
+                }
+            }
             if CommandLine.arguments.contains("--test-activate") {
                 await Self.testLevelTwoActivation(environment)
+            }
+            if CommandLine.arguments.contains("--test-minimized") {
+                await Self.testMinimizedCapture(environment)
             }
         }
     }
@@ -155,6 +166,85 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             """
         try? (header + log).write(
             toFile: "/tmp/tabswitcher-activate.txt", atomically: true, encoding: .utf8)
+    }
+
+    /// Verifies the central claim behind using the private capture path at all:
+    /// pixels for a **minimized** window. ScreenCaptureKit structurally cannot do this
+    /// — its stream pauses while a window is minimized — so if this fails there is no
+    /// reason to accept the risk of a private symbol.
+    ///
+    /// Uses a throwaway TextEdit window so no real work is disturbed.
+    private static func testMinimizedCapture(_ environment: AppEnvironment) async {
+        var log = "minimized capture test\n\n"
+
+        guard let textEdit = NSWorkspace.shared.urlForApplication(
+            withBundleIdentifier: "com.apple.TextEdit") else {
+            log += "TextEdit not found\n"
+            try? log.write(toFile: "/tmp/tabswitcher-minimized.txt", atomically: true, encoding: .utf8)
+            return
+        }
+        // Open an actual document: launching TextEdit bare gives its Open dialog,
+        // which is not a minimizable window and made an earlier version of this test
+        // pass without ever minimizing anything.
+        let scratch = URL(fileURLWithPath: "/tmp/tabswitcher-minimize-probe.txt")
+        try? "minimized capture probe".write(to: scratch, atomically: true, encoding: .utf8)
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        _ = try? await NSWorkspace.shared.open([scratch], withApplicationAt: textEdit,
+                                               configuration: configuration)
+        try? await Task.sleep(for: .seconds(3))
+
+        await environment.store.refresh()
+        var snapshot = await environment.store.current
+        guard let group = snapshot.groups.first(where: { $0.app.bundleID == "com.apple.TextEdit" }),
+              let window = group.windows.first(where: { $0.title.contains("probe") })
+                ?? group.windows.first else {
+            log += "no TextEdit window appeared; apps seen: "
+            log += snapshot.groups.map(\.app.name).joined(separator: ", ") + "\n"
+            try? log.write(toFile: "/tmp/tabswitcher-minimized.txt", atomically: true, encoding: .utf8)
+            return
+        }
+        log += "window: \"\(window.title)\" id \(window.id)\n"
+
+        let capturer: any WindowCapturer = SkyLightCapturer.isAvailable
+            ? SkyLightCapturer() : ScreenCaptureKitCapturer()
+        log += "capturer: \(capturer.name)\n\n"
+
+        let before = await capturer.capture(windowID: window.id, maxPixelWidth: 400)
+        log += "visible:   \(before.map { "\($0.width)x\($0.height)" } ?? "NO IMAGE")\n"
+
+        guard let element = await environment.store.element(for: window.id) else {
+            log += "no ax element, cannot minimize\n"
+            try? log.write(toFile: "/tmp/tabswitcher-minimized.txt", atomically: true, encoding: .utf8)
+            return
+        }
+        let minimizeResult = element.set(kAXMinimizedAttribute as String, kCFBooleanTrue)
+        log += "AXMinimized write: \(minimizeResult == .success ? "ok" : "failed (\(minimizeResult.rawValue))")\n"
+        try? await Task.sleep(for: .seconds(2))
+
+        await environment.store.refresh()
+        snapshot = await environment.store.current
+        let reported = snapshot.groups
+            .first { $0.app.bundleID == "com.apple.TextEdit" }?
+            .windows.first { $0.id == window.id }
+        log += "flagged minimized: \(reported?.flags.contains(.minimized) ?? false)\n"
+
+        let after = await capturer.capture(windowID: window.id, maxPixelWidth: 400)
+        log += "minimized: \(after.map { "\($0.width)x\($0.height)" } ?? "NO IMAGE")\n\n"
+        let actuallyMinimized = reported?.flags.contains(.minimized) ?? false
+        if !actuallyMinimized {
+            log += "INCONCLUSIVE — the window never minimized, so this proves nothing\n"
+        } else {
+            log += after != nil
+                ? "PASS — minimized windows have capturable pixels\n"
+                : "FAIL — no pixels while minimized; the private path buys nothing here\n"
+        }
+
+        element.set(kAXMinimizedAttribute as String, kCFBooleanFalse)
+        try? await Task.sleep(for: .seconds(1))
+        NSRunningApplication(processIdentifier: window.pid)?.terminate()
+
+        try? log.write(toFile: "/tmp/tabswitcher-minimized.txt", atomically: true, encoding: .utf8)
     }
 
     @objc private func quit() {

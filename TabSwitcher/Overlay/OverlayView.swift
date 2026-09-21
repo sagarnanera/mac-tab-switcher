@@ -4,6 +4,9 @@ import SwitcherCore
 /// The switcher itself: an app row that reveals a window strip beneath it.
 struct OverlayView: View {
     @Bindable var model: OverlayModel
+    /// Mouse events go through the same inputs the keyboard uses, so hover and click
+    /// cannot drift out of step with the state machine's rules.
+    let onInput: (OverlayInput) -> Void
 
     private var state: OverlayState { model.state }
 
@@ -50,6 +53,13 @@ struct OverlayView: View {
                     dwellBar(visible: isAppSelected(index) && model.showsDwellProgress)
                         .frame(width: layout.tileSize.width)
                 }
+                .contentShape(.rect)
+                .onHover { inside in
+                    // Hovering arms dwell exactly as keyboard selection does, so
+                    // resting the pointer on an app reveals its windows too.
+                    if inside { onInput(.hover(app: index, window: nil)) }
+                }
+                .onTapGesture { onInput(.confirm) }
             }
         }
     }
@@ -92,6 +102,11 @@ struct OverlayView: View {
                         isSelected: isWindowSelected(index),
                         windowCount: nil
                     )
+                    .contentShape(.rect)
+                    .onHover { inside in
+                        if inside { onInput(.hover(app: currentAppIndex, window: index)) }
+                    }
+                    .onTapGesture { onInput(.confirm) }
                 }
             }
             .padding(.horizontal, 4)
@@ -182,6 +197,11 @@ struct OverlayView: View {
         var metrics = model.metrics
         metrics.preferredWidth = max(metrics.minimumWidth, metrics.preferredWidth * 0.8)
         return metrics
+    }
+
+    private var currentAppIndex: Int {
+        if case .grouped(let app, _) = state.selection { return app }
+        return 0
     }
 
     private var screenSize: CGSize {

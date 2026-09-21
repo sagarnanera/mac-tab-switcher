@@ -19,6 +19,13 @@ final class OverlayController: NSObject {
     private var panel: OverlayPanel?
     private var hosting: NSHostingController<OverlayView>?
     private var dwellTask: Task<Void, Never>?
+    /// Screen-space Y of the panel's top edge for the current session.
+    ///
+    /// The strip reveals *below* the app row, so the panel grows downward. Re-centring
+    /// on every resize moved the app row up under a user who was still deciding, which
+    /// breaks the rule that the row they are aiming at must not move. Pinning the top
+    /// edge keeps the row exactly where it was.
+    private var anchorTop: CGFloat?
     private var policy = DwellPolicy.default
 
     init(
@@ -74,8 +81,18 @@ final class OverlayController: NSObject {
         }
     }
 
+    /// Reads the state out, mutates the copy, then assigns it back.
+    ///
+    /// Not cosmetic. Calling a `mutating` method directly on `model.state` goes through
+    /// the `_modify` accessor, which `@Observable` does not instrument — so SwiftUI
+    /// never learns the value changed and the overlay renders its first frame and
+    /// nothing after it. An explicit assignment invokes the setter and emits the
+    /// change. Every in-place mutation of an observable's value-type property has this
+    /// hazard.
     private func dispatch(_ input: OverlayInput) {
-        let effects = model.state.apply(input)
+        var next = model.state
+        let effects = next.apply(input)
+        model.state = next
         for effect in effects { perform(effect) }
         if !effects.isEmpty { resize() }
     }
@@ -91,6 +108,7 @@ final class OverlayController: NSObject {
         case .hide:
             hotkeys.setSessionActive(false)
             cancelDwell()
+            anchorTop = nil
             panel?.orderOut(nil)
 
         case .armDwell:
@@ -167,7 +185,11 @@ final class OverlayController: NSObject {
     /// the panel to whatever it held last and clipped everything else away.
     private func preparePanel() {
         let panel = OverlayPanel()
-        let hosting = NSHostingController(rootView: OverlayView(model: model))
+        let hosting = NSHostingController(
+            rootView: OverlayView(model: model) { [weak self] input in
+                self?.dispatch(input)
+            }
+        )
         hosting.sizingOptions = [.preferredContentSize]
         panel.contentViewController = hosting
         panel.delegate = self
@@ -184,26 +206,53 @@ final class OverlayController: NSObject {
         dispatch(.summon)
     }
 
+    /// Demo hook: selects the first expandable app and steps into its window strip.
+    /// Demo hook: selects the first expandable app and steps into its window strip, so
+    /// the collapsed and expanded layouts can be compared without a keystroke.
+    func revealStripForDemo() {
+        if let index = model.state.groups.firstIndex(where: { $0.isExpandable }) {
+            dispatch(.hover(app: index, window: nil))
+        }
+        dispatch(.enterStrip)
+    }
+
     private func show() {
         guard let panel else { return }
+        // Centre once, for the collapsed layout, then keep that top edge for the rest
+        // of the session.
+        anchorTop = nil
         panel.alphaValue = 1
         panel.orderFrontRegardless()
         panel.makeKey()
-        recenter()
+        reposition()
     }
 
     /// Only ever repositions; the size belongs to AppKit and SwiftUI.
-    fileprivate func recenter() {
+    fileprivate func reposition() {
         guard let panel, panel.isVisible else { return }
         let screen = targetScreen().visibleFrame
         let size = panel.frame.size
-        panel.setFrameOrigin(
-            NSPoint(x: screen.midX - size.width / 2, y: screen.midY - size.height / 2)
-        )
+        guard size.height > 1 else { return }
+
+        let top: CGFloat
+        if let anchorTop {
+            top = anchorTop
+        } else {
+            top = screen.midY + size.height / 2
+            self.anchorTop = top
+        }
+        // If growing downward would run off the bottom of the screen, slide the whole
+        // panel up and re-anchor there rather than clipping the strip.
+        var origin = NSPoint(x: screen.midX - size.width / 2, y: top - size.height)
+        if origin.y < screen.minY {
+            origin.y = screen.minY
+            anchorTop = origin.y + size.height
+        }
+        panel.setFrameOrigin(origin)
     }
 
     private func resize() {
-        recenter()
+        reposition()
     }
 
     /// `NSScreen.main` has not meant "the screen with the key window" since 10.9 and
@@ -222,6 +271,6 @@ extension OverlayController: NSWindowDelegate {
     /// it centred here rather than at dispatch time means the reposition always uses
     /// the size AppKit actually applied.
     func windowDidResize(_ notification: Notification) {
-        recenter()
+        reposition()
     }
 }

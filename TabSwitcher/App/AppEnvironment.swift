@@ -62,6 +62,7 @@ final class AppEnvironment {
     func applyPreferences() {
         model.metrics = preferences.tileMetrics
         controller.setDwellPolicy(preferences.dwellPolicy)
+        hotkeys.setHotkey(preferences.hotkey)
         let options = preferences.groupingOptions
         Task {
             await store.setGroupingOptions(options)

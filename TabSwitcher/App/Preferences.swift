@@ -18,6 +18,7 @@ final class Preferences {
         static let breakOutNativeTabs = "breakOutNativeTabs"
         static let includeMinimized = "includeMinimized"
         static let bestQualityThumbnails = "bestQualityThumbnails"
+        static let hotkey = "hotkey"
     }
 
     static let currentVersion = 1
@@ -43,6 +44,25 @@ final class Preferences {
     var bestQualityThumbnails: Bool {
         didSet { defaults.set(bestQualityThumbnails, forKey: Key.bestQualityThumbnails) }
     }
+    var hotkey: Hotkey {
+        didSet {
+            guard let data = try? JSONEncoder().encode(hotkey) else { return }
+            defaults.set(data, forKey: Key.hotkey)
+        }
+    }
+    /// Reflects the system's own login-item state rather than a stored copy: the user
+    /// can remove the login item in System Settings, and a cached flag would then lie.
+    var launchAtLogin: Bool {
+        didSet {
+            if let error = LaunchAtLogin.set(launchAtLogin) {
+                launchAtLoginError = error
+                launchAtLogin = LaunchAtLogin.isEnabled
+            } else {
+                launchAtLoginError = nil
+            }
+        }
+    }
+    var launchAtLoginError: String?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -61,6 +81,9 @@ final class Preferences {
         breakOutNativeTabs = defaults.bool(forKey: Key.breakOutNativeTabs)
         includeMinimized = defaults.bool(forKey: Key.includeMinimized)
         bestQualityThumbnails = defaults.bool(forKey: Key.bestQualityThumbnails)
+        hotkey = (defaults.data(forKey: Key.hotkey)
+            .flatMap { try? JSONDecoder().decode(Hotkey.self, from: $0) }) ?? .default
+        launchAtLogin = LaunchAtLogin.isEnabled
     }
 
     var dwellPolicy: DwellPolicy {
