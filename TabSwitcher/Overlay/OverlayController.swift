@@ -9,7 +9,7 @@ import SwitcherCore
 /// state machine decides *what* should happen; this decides *how*, and neither has to
 /// know about the other's concerns.
 @MainActor
-final class OverlayController {
+final class OverlayController: NSObject {
     private let model: OverlayModel
     private let store: WindowStore
     private let thumbnails: ThumbnailStore
@@ -17,7 +17,7 @@ final class OverlayController {
     private let hotkeys: HotkeyMonitor
 
     private var panel: OverlayPanel?
-    private var hostingView: NSHostingView<OverlayView>?
+    private var hosting: NSHostingController<OverlayView>?
     private var dwellTask: Task<Void, Never>?
     private var policy = DwellPolicy.default
 
@@ -33,6 +33,7 @@ final class OverlayController {
         self.thumbnails = thumbnails
         self.activator = activator
         self.hotkeys = hotkeys
+        super.init()
     }
 
     func setDwellPolicy(_ policy: DwellPolicy) {
@@ -158,39 +159,51 @@ final class OverlayController {
     /// Built once at launch and merely re-shown afterwards. Creating a window and its
     /// hosting view on the hotkey would put SwiftUI's first-render cost directly in the
     /// path the user feels.
+    ///
+    /// Uses `NSHostingController` with `.preferredContentSize` rather than a bare
+    /// `NSHostingView`: AppKit then resizes the window whenever SwiftUI's preferred
+    /// size changes. Measuring the view ourselves right after mutating state reads the
+    /// size of the *previous* layout — SwiftUI has not re-laid-out yet — which sized
+    /// the panel to whatever it held last and clipped everything else away.
     private func preparePanel() {
         let panel = OverlayPanel()
-        let hosting = NSHostingView(rootView: OverlayView(model: model))
-        hosting.sizingOptions = [.intrinsicContentSize]
-        panel.contentView = hosting
+        let hosting = NSHostingController(rootView: OverlayView(model: model))
+        hosting.sizingOptions = [.preferredContentSize]
+        panel.contentViewController = hosting
+        panel.delegate = self
         panel.alphaValue = 0
         panel.orderOut(nil)
         self.panel = panel
-        self.hostingView = hosting
+        self.hosting = hosting
+    }
+
+    /// Shows the overlay. Public so a demo/screenshot mode can drive it without a
+    /// synthesised keystroke, which WindowServer refuses to deliver anyway.
+    func summonForDemo() {
+        activator.rememberFront()
+        dispatch(.summon)
     }
 
     private func show() {
         guard let panel else { return }
-        resize()
         panel.alphaValue = 1
         panel.orderFrontRegardless()
         panel.makeKey()
+        recenter()
+    }
+
+    /// Only ever repositions; the size belongs to AppKit and SwiftUI.
+    fileprivate func recenter() {
+        guard let panel, panel.isVisible else { return }
+        let screen = targetScreen().visibleFrame
+        let size = panel.frame.size
+        panel.setFrameOrigin(
+            NSPoint(x: screen.midX - size.width / 2, y: screen.midY - size.height / 2)
+        )
     }
 
     private func resize() {
-        guard let panel, let hosting = hostingView, panel.isVisible || model.state.isVisible else { return }
-        let size = hosting.intrinsicContentSize
-        guard size.width > 0, size.height > 0 else { return }
-        let screen = targetScreen().visibleFrame
-        panel.setFrame(
-            NSRect(
-                x: screen.midX - size.width / 2,
-                y: screen.midY - size.height / 2,
-                width: size.width,
-                height: size.height
-            ),
-            display: true
-        )
+        recenter()
     }
 
     /// `NSScreen.main` has not meant "the screen with the key window" since 10.9 and
@@ -201,5 +214,14 @@ final class OverlayController {
         return NSScreen.screens.first { $0.frame.contains(mouse) }
             ?? NSScreen.screens.first
             ?? NSScreen.main!
+    }
+}
+
+extension OverlayController: NSWindowDelegate {
+    /// The panel grows and shrinks as the window strip reveals and collapses. Keeping
+    /// it centred here rather than at dispatch time means the reposition always uses
+    /// the size AppKit actually applied.
+    func windowDidResize(_ notification: Notification) {
+        recenter()
     }
 }

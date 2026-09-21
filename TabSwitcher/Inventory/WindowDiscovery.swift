@@ -87,6 +87,28 @@ enum WindowDiscovery {
             }
         }
 
+        // If nothing at all is titled while plenty of windows exist, the Window Server
+        // is withholding titles rather than every window genuinely being unnamed.
+        let titlesAvailable = candidates.contains { !$0.title.isEmpty }
+
+        // Resolve every title first. Fallback names are invented in a second pass, so
+        // a surface processed early cannot claim a name that a real title needs — that
+        // ordering dependence produced two tiles both labelled "Claude".
+        var resolvedTitles: [CGWindowID: String] = [:]
+        for candidate in candidates {
+            let ax = axByWindowID[candidate.id]
+                ?? unmatchedAX[candidate.pid]?.first { window in
+                    window.title == candidate.title && window.frame.isCloseTo(candidate.frame)
+                }
+            resolvedTitles[candidate.id] = (ax?.title).flatMap { $0.isEmpty ? nil : $0 }
+                ?? candidate.title
+        }
+        var usedTitlesByPID: [pid_t: Set<String>] = [:]
+        for candidate in candidates {
+            guard let title = resolvedTitles[candidate.id], !title.isEmpty else { continue }
+            usedTitlesByPID[candidate.pid, default: []].insert(title)
+        }
+
         let tabbed = nativeTabWindowIDs(axByPID: axByPID)
         var entries: [WindowEntry] = []
         var elements: [CGWindowID: AXElement] = [:]
@@ -99,8 +121,26 @@ enum WindowDiscovery {
                     window.title == candidate.title && window.frame.isCloseTo(candidate.frame)
                 }
 
-            let title = (ax?.title).flatMap { $0.isEmpty ? nil : $0 } ?? candidate.title
-            guard WindowFilter.isRenderable(title: title, corroboratedByAX: ax != nil) else { continue }
+            let resolved = resolvedTitles[candidate.id] ?? ""
+            let evidence: WindowFilter.Evidence =
+                ax != nil ? .accessibility : (titlesAvailable ? .titlesAvailable : .geometryOnly)
+            guard WindowFilter.isRenderable(title: resolved, evidence: evidence) else { continue }
+
+            // A tile still has to say *something*. Falling back to the app name,
+            // numbered when there are several, keeps the switcher usable with no
+            // permissions at all.
+            var title = resolved
+            if title.isEmpty {
+                let appName = appsByPID[candidate.pid]?.name ?? "Window"
+                var candidateTitle = appName
+                var index = 1
+                while usedTitlesByPID[candidate.pid, default: []].contains(candidateTitle) {
+                    index += 1
+                    candidateTitle = "\(appName) \(index)"
+                }
+                title = candidateTitle
+            }
+            usedTitlesByPID[candidate.pid, default: []].insert(title)
 
             var flags: WindowFlags = []
             if ax?.isMinimized == true { flags.insert(.minimized) }

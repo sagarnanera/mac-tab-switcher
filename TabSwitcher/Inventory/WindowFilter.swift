@@ -1,13 +1,13 @@
 import ApplicationServices
 import Foundation
 
-/// Decides whether an accessibility element is a window a person would switch to.
+/// Decides whether a surface is a window a person would switch to.
 ///
 /// There is no clean predicate for this, and pretending otherwise is how switchers end
-/// up listing tooltips. Measured on macOS 27, every app emits several full-width
-/// strips at the origin and a square helper surface; browsers and Electron apps add
-/// more. The Window Server list culls most by layer, alpha and size — this is the
-/// second gate, on the accessibility side, where subrole is available.
+/// up listing tooltips. Measured on macOS 27, every app emits several full-width strips
+/// at the origin plus square helper surfaces; the Window Server list culls most of
+/// those by layer, alpha and size. This is the second gate, where richer evidence is
+/// available.
 enum WindowFilter {
 
     /// `AXFloatingWindow` is deliberately excluded: a floating panel passes a naive
@@ -25,11 +25,30 @@ enum WindowFilter {
         return window.hasCloseButton || window.hasMinimizeButton
     }
 
-    /// A window with no title from either source cannot be labelled in the UI, and in
-    /// practice is always one of the helper surfaces above. Kept only when
-    /// accessibility vouches for it, since AX sometimes has a title the Window Server
-    /// list lacks.
-    static func isRenderable(title: String, corroboratedByAX: Bool) -> Bool {
-        !title.isEmpty || corroboratedByAX
+    /// What evidence is available to judge a surface by.
+    ///
+    /// This distinction exists because "untitled means junk" is only a valid rule while
+    /// titles are actually obtainable. The Window Server withholds `kCGWindowName`
+    /// entirely without the Screen Recording grant, and treating that as "every window
+    /// is junk" empties the switcher — which is exactly what happened before this
+    /// existed.
+    enum Evidence {
+        /// Accessibility described this window: subrole has already decided it is
+        /// switchable, and its title is authoritative.
+        case accessibility
+        /// No accessibility, but titles are being returned — so an untitled surface
+        /// really is a helper window.
+        case titlesAvailable
+        /// Neither. Judge on geometry alone and label with the app name. A slightly
+        /// noisy list beats an empty one.
+        case geometryOnly
+    }
+
+    static func isRenderable(title: String, evidence: Evidence) -> Bool {
+        switch evidence {
+        case .accessibility: true
+        case .titlesAvailable: !title.isEmpty
+        case .geometryOnly: true
+        }
     }
 }
