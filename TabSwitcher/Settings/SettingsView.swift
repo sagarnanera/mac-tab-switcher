@@ -67,6 +67,7 @@ struct SettingsView: View {
         .onChange(of: preferences.includeMinimized) { _, _ in onChange() }
         .onChange(of: preferences.bestQualityThumbnails) { _, _ in onChange() }
         .onChange(of: preferences.hotkey) { _, _ in onChange() }
+        .onChange(of: preferences.showsKeyboardHints) { _, _ in onChange() }
     }
 }
 
@@ -238,6 +239,13 @@ private struct AppearancePane: View {
                 // at the chosen size makes the setting self-explanatory.
                 previewSample
                 Text("Previews shrink to fit the screen, then wrap onto more rows.")
+                    .settingsHelp()
+            }
+
+            Section("Overlay") {
+                Toggle("Show key hints", isOn: $preferences.showsKeyboardHints)
+                Text("The reminders along the bottom of the switcher. Worth turning off "
+                     + "once the keys are familiar.")
                     .settingsHelp()
             }
 

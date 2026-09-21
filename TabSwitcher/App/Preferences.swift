@@ -19,6 +19,7 @@ final class Preferences {
         static let includeMinimized = "includeMinimized"
         static let bestQualityThumbnails = "bestQualityThumbnails"
         static let hotkey = "hotkey"
+        static let showsKeyboardHints = "showsKeyboardHints"
     }
 
     static let currentVersion = 1
@@ -43,6 +44,11 @@ final class Preferences {
     }
     var bestQualityThumbnails: Bool {
         didSet { defaults.set(bestQualityThumbnails, forKey: Key.bestQualityThumbnails) }
+    }
+    /// The key hints along the bottom of the overlay. Useful while learning the
+    /// gestures, noise once they are muscle memory.
+    var showsKeyboardHints: Bool {
+        didSet { defaults.set(showsKeyboardHints, forKey: Key.showsKeyboardHints) }
     }
     var hotkey: Hotkey {
         didSet {
@@ -75,6 +81,7 @@ final class Preferences {
         breakOutNativeTabs = defaults.bool(forKey: Key.breakOutNativeTabs)
         includeMinimized = defaults.bool(forKey: Key.includeMinimized)
         bestQualityThumbnails = defaults.bool(forKey: Key.bestQualityThumbnails)
+        showsKeyboardHints = defaults.bool(forKey: Key.showsKeyboardHints)
         hotkey = (defaults.data(forKey: Key.hotkey)
             .flatMap { try? JSONDecoder().decode(Hotkey.self, from: $0) }) ?? .default
         launchAtLogin = LaunchAtLogin.isEnabled
@@ -92,6 +99,7 @@ final class Preferences {
         (Key.breakOutNativeTabs, true),
         (Key.includeMinimized, true),
         (Key.bestQualityThumbnails, true),
+        (Key.showsKeyboardHints, true),
     ]
 
     /// Restores every preference to its shipped value.
@@ -111,6 +119,7 @@ final class Preferences {
         breakOutNativeTabs = defaults.bool(forKey: Key.breakOutNativeTabs)
         includeMinimized = defaults.bool(forKey: Key.includeMinimized)
         bestQualityThumbnails = defaults.bool(forKey: Key.bestQualityThumbnails)
+        showsKeyboardHints = defaults.bool(forKey: Key.showsKeyboardHints)
         hotkey = .default
     }
 
@@ -123,6 +132,7 @@ final class Preferences {
             || !breakOutNativeTabs
             || !includeMinimized
             || !bestQualityThumbnails
+            || !showsKeyboardHints
             || hotkey != .default
     }
 

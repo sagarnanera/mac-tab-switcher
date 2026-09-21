@@ -20,6 +20,10 @@ final class OverlayModel {
     var dwellProgress: Double = 0
     var showsDwellProgress = false
     var secureInputWarning = false
+    /// Whether to draw the key hints. Warnings are shown regardless — an overlay that
+    /// silently stops responding to typing, with nothing explaining why, reads as
+    /// broken rather than restricted.
+    var showsKeyboardHints = true
 
     private let thumbnails: ThumbnailStore
     private var iconCache: [pid_t: NSImage] = [:]

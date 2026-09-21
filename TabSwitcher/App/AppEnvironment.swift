@@ -61,6 +61,7 @@ final class AppEnvironment {
     /// store because they change what a snapshot *is*, not merely how it is drawn.
     func applyPreferences() {
         model.metrics = preferences.tileMetrics
+        model.showsKeyboardHints = preferences.showsKeyboardHints
         controller.setDwellPolicy(preferences.dwellPolicy)
         hotkeys.setHotkey(preferences.hotkey)
         let options = preferences.groupingOptions

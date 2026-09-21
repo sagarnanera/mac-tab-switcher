@@ -159,18 +159,22 @@ struct OverlayView: View {
 
     // MARK: - Footer
 
+    @ViewBuilder
     private var footer: some View {
-        HStack(spacing: 14) {
-            if model.secureInputWarning {
-                Label("Secure input active — typing to filter is unavailable", systemImage: "exclamationmark.lock")
-                    .foregroundStyle(.orange)
-            } else {
-                hint
-            }
+        if model.secureInputWarning {
+            // Always shown, even with hints turned off: this explains why typing has
+            // stopped working, and without it the overlay just looks broken.
+            Label("Secure input active — typing to filter is unavailable",
+                  systemImage: "exclamationmark.lock")
+                .font(.caption2)
+                .foregroundStyle(.orange)
+                .padding(.top, 14)
+        } else if model.showsKeyboardHints {
+            hint
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(.top, 14)
         }
-        .font(.caption2)
-        .foregroundStyle(.secondary)
-        .padding(.top, 14)
     }
 
     private var hint: some View {
