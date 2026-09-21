@@ -6,7 +6,25 @@
 | **Accessibility** | minimized/main state, native tab detection, and the element used to raise a window reliably | switching still works through the private front-process call; titles still come from the Window Server |
 
 Neither is fatal on its own, which is deliberate: a switcher that stops working because
-a monthly consent dialog was dismissed is worse than one that loses its previews.
+a monthly consent dialog was dismissed is worse than one that loses its previews. The
+two also cover for each other — titles come from whichever is available.
+
+| Screen Recording | Accessibility | Result |
+|---|---|---|
+| yes | yes | everything |
+| yes | no | previews and titles; no minimized or native-tab detection |
+| no | yes | titles from accessibility, app icons instead of previews — fully usable |
+| no | no | unusable |
+
+## Why Screen Recording is unavoidable for previews
+
+Going through private APIs does not avoid this permission, and it is worth being clear
+why. The gate is not in the function you call — it is in WindowServer, which owns the
+pixels. `CGSHWCaptureWindowList` is a WindowServer call, so it sits behind exactly the
+same TCC check as ScreenCaptureKit. Using the private path buys access to *minimized
+windows*, not freedom from the grant. Every comparable app is in the same position:
+DockDoor gates its capture on `CGPreflightScreenCaptureAccess()` and tells the user
+outright that "Screen Recording permission is required to show window thumbnails".
 
 Both are granted to the **`.app` bundle**, never to a bare binary.
 
