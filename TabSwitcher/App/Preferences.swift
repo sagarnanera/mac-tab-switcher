@@ -66,15 +66,9 @@ final class Preferences {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.register(defaults: [
-            Key.version: Self.currentVersion,
-            Key.tileWidth: 220.0,
-            Key.dwellMilliseconds: 500,
-            Key.dwellMode: "delayed",
-            Key.breakOutNativeTabs: true,
-            Key.includeMinimized: true,
-            Key.bestQualityThumbnails: true,
-        ])
+        var registered: [String: Any] = [Key.version: Self.currentVersion]
+        for (key, value) in Self.defaults { registered[key] = value }
+        defaults.register(defaults: registered)
         tileWidth = TileSizing.Metrics.clampedWidth(defaults.double(forKey: Key.tileWidth))
         dwellMilliseconds = defaults.integer(forKey: Key.dwellMilliseconds)
         dwellMode = defaults.string(forKey: Key.dwellMode) ?? "delayed"
@@ -84,6 +78,52 @@ final class Preferences {
         hotkey = (defaults.data(forKey: Key.hotkey)
             .flatMap { try? JSONDecoder().decode(Hotkey.self, from: $0) }) ?? .default
         launchAtLogin = LaunchAtLogin.isEnabled
+    }
+
+    /// Everything the user can change, in one place.
+    ///
+    /// Defined as a list rather than reassigning each property by hand so that adding a
+    /// preference cannot silently leave a stale value behind on reset — a class of bug
+    /// nobody notices until someone reports that "reset didn't reset it".
+    private static let defaults: [(String, Any)] = [
+        (Key.tileWidth, 220.0),
+        (Key.dwellMilliseconds, 500),
+        (Key.dwellMode, "delayed"),
+        (Key.breakOutNativeTabs, true),
+        (Key.includeMinimized, true),
+        (Key.bestQualityThumbnails, true),
+    ]
+
+    /// Restores every preference to its shipped value.
+    ///
+    /// Launch at login is deliberately excluded: it lives in the system's login items,
+    /// not in our defaults, and silently unregistering it would be a surprising side
+    /// effect of a button labelled "restore defaults".
+    func restoreDefaults() {
+        for (key, _) in Self.defaults {
+            defaults.removeObject(forKey: key)
+        }
+        defaults.removeObject(forKey: Key.hotkey)
+
+        tileWidth = TileSizing.Metrics.clampedWidth(defaults.double(forKey: Key.tileWidth))
+        dwellMilliseconds = defaults.integer(forKey: Key.dwellMilliseconds)
+        dwellMode = defaults.string(forKey: Key.dwellMode) ?? "delayed"
+        breakOutNativeTabs = defaults.bool(forKey: Key.breakOutNativeTabs)
+        includeMinimized = defaults.bool(forKey: Key.includeMinimized)
+        bestQualityThumbnails = defaults.bool(forKey: Key.bestQualityThumbnails)
+        hotkey = .default
+    }
+
+    /// Whether anything differs from the shipped values, so the reset control can be
+    /// disabled when it would do nothing.
+    var hasChangesFromDefaults: Bool {
+        tileWidth != 220
+            || dwellMilliseconds != 500
+            || dwellMode != "delayed"
+            || !breakOutNativeTabs
+            || !includeMinimized
+            || !bestQualityThumbnails
+            || hotkey != .default
     }
 
     var dwellPolicy: DwellPolicy {

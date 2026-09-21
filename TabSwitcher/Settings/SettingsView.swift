@@ -74,6 +74,7 @@ struct SettingsView: View {
 
 private struct GeneralPane: View {
     @Bindable var preferences: Preferences
+    @State private var confirmingReset = false
 
     var body: some View {
         Form {
@@ -101,6 +102,32 @@ private struct GeneralPane: View {
                 Toggle("Include minimized windows", isOn: $preferences.includeMinimized)
                 Text("Minimized windows still show a preview of how they last looked.")
                     .settingsHelp()
+            }
+
+            Section {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Restore defaults")
+                        Text("Returns every setting to how it shipped. Login item is left alone.")
+                            .settingsHelp()
+                    }
+                    Spacer()
+                    Button("Restore") { confirmingReset = true }
+                        .disabled(!preferences.hasChangesFromDefaults)
+                }
+            }
+            // Destructive-ish and irreversible, so it confirms first and names exactly
+            // what it will and will not touch.
+            .confirmationDialog(
+                "Restore all settings to their defaults?",
+                isPresented: $confirmingReset,
+                titleVisibility: .visible
+            ) {
+                Button("Restore defaults", role: .destructive) { preferences.restoreDefaults() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Your shortcut, dwell timing and appearance return to how they shipped. "
+                     + "Launch at login is not changed.")
             }
 
             // Quitting sits apart from everything else: it is the one action here that
