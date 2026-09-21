@@ -24,7 +24,7 @@ final class EventTapThread: @unchecked Sendable {
             ready.signal()
             CFRunLoopRun()
         }
-        thread.name = "dev.nanera.tabswitcher.eventtap"
+        thread.name = "dev.sagar.tabswitcher.eventtap"
         thread.qualityOfService = .userInteractive
         thread.start()
         ready.wait()

@@ -234,7 +234,7 @@
 				   manual signing identity dyld rejects it for a Team ID mismatch — and
 				   a stable signature is exactly what keeps TCC grants alive here. */
 				ENABLE_DEBUG_DYLIB = NO;
-				CODE_SIGN_IDENTITY = "TabSwitcher Dev";
+				CODE_SIGN_IDENTITY = "TabSwitcher Signing";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -247,7 +247,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.nanera.tabswitcher;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.sagar.tabswitcher;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -263,7 +263,7 @@
 				   manual signing identity dyld rejects it for a Team ID mismatch — and
 				   a stable signature is exactly what keeps TCC grants alive here. */
 				ENABLE_DEBUG_DYLIB = NO;
-				CODE_SIGN_IDENTITY = "TabSwitcher Dev";
+				CODE_SIGN_IDENTITY = "TabSwitcher Signing";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -276,7 +276,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.nanera.tabswitcher;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.sagar.tabswitcher;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;

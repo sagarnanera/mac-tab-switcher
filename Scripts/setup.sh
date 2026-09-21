@@ -9,7 +9,7 @@
 # Idempotent.
 set -euo pipefail
 
-NAME="${1:-TabSwitcher Dev}"
+NAME="${1:-TabSwitcher Signing}"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
 # NOT `find-identity -v`: a self-signed identity reports CSSMERR_TP_NOT_TRUSTED and is

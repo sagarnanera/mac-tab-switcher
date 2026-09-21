@@ -5,7 +5,7 @@
 # record that no longer matches, which shows as "granted" in System Settings while
 # every call fails. Resetting is the only way to get the prompts back.
 set -euo pipefail
-BUNDLE_ID="dev.nanera.tabswitcher"
+BUNDLE_ID="dev.sagar.tabswitcher"
 
 pkill -f 'TabSwitcher.app' 2>/dev/null || true
 tccutil reset Accessibility "$BUNDLE_ID" 2>/dev/null || true

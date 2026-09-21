@@ -7,7 +7,7 @@ import os
 /// a user reporting "no previews for minimized windows" is answered by this list
 /// rather than by guesswork.
 enum Diagnostics {
-    private static let logger = Logger(subsystem: "dev.nanera.tabswitcher", category: "app")
+    private static let logger = Logger(subsystem: "dev.sagar.tabswitcher", category: "app")
 
     static func log(_ message: String) {
         logger.notice("\(message, privacy: .public)")

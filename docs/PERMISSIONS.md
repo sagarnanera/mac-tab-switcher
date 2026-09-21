@@ -53,13 +53,13 @@ codesign -d -r- build/TabSwitcher.app 2>&1 | grep designated
 Good — identity-based, identical across rebuilds:
 
 ```
-designated => identifier "dev.nanera.tabswitcher" and certificate leaf = H"62abfda3..."
+designated => identifier "dev.sagar.tabswitcher" and certificate leaf = H"62abfda3..."
 ```
 
 Bad — ad-hoc, changes every build, grants keep evaporating:
 
 ```
-designated => identifier "dev.nanera.tabswitcher" and cdhash H"a9295b18..."
+designated => identifier "dev.sagar.tabswitcher" and cdhash H"a9295b18..."
 ```
 
 Build twice and compare. If the lines differ, grants will not survive.
@@ -67,8 +67,8 @@ Build twice and compare. If the lines differ, grants will not survive.
 ## Resetting during development
 
 ```bash
-tccutil reset Accessibility dev.nanera.tabswitcher
-tccutil reset ScreenCapture dev.nanera.tabswitcher
+tccutil reset Accessibility dev.sagar.tabswitcher
+tccutil reset ScreenCapture dev.sagar.tabswitcher
 ```
 
 ## Ongoing friction

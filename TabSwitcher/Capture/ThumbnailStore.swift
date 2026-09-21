@@ -47,7 +47,7 @@ actor ThumbnailStore {
         self.freshness = freshness
         self.directory = FileManager.default
             .urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            .appending(path: Bundle.main.bundleIdentifier ?? "dev.nanera.tabswitcher")
+            .appending(path: Bundle.main.bundleIdentifier ?? "dev.sagar.tabswitcher")
             .appending(path: "thumbnails")
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }

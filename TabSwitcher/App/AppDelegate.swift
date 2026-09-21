@@ -38,12 +38,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // WindowServer refuses synthesised modifier keystrokes, so the overlay cannot
         // be triggered programmatically. This exists so it can still be inspected and
         // screenshotted during development.
-        if demoMode {
-            Task {
-                try? await Task.sleep(for: .seconds(2))
-                await Self.writeDemoReport(environment)
-                environment.controller.summonForDemo()
-            }
+        Task {
+            // Give the first discovery pass time to land before reporting.
+            try? await Task.sleep(for: .seconds(2))
+            await Self.writeStatusReport(environment)
+            if demoMode { environment.controller.summonForDemo() }
         }
     }
 
@@ -58,6 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let environment = self?.environment else { return }
             self?.refreshStatusItem()
             await environment.store.refresh()
+            await Self.writeStatusReport(environment)
         }
     }
 
@@ -134,13 +134,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate()
     }
 
+    static let statusReportPath = "/tmp/tabswitcher-status.txt"
+
     /// Writes what the *running app* sees, from inside its own TCC identity.
     ///
     /// The `--diagnose` command-line mode cannot answer this: launched from a shell,
     /// macOS attributes permissions to the terminal that started it, so it reports the
     /// terminal's grants rather than the app's. Anything permission-dependent has to be
-    /// measured in here.
-    private static func writeDemoReport(_ environment: AppEnvironment) async {
+    /// measured in here, which is why this runs on every launch and not only in demo
+    /// mode.
+    private static func writeStatusReport(_ environment: AppEnvironment) async {
         let snapshot = await environment.store.current
         var report = """
             accessibility:    \(AXPermission.isTrusted() ? "granted" : "NOT granted")
@@ -159,7 +162,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 report += "    [\(thumb)] \(window.title)\n"
             }
         }
-        try? report.write(toFile: "/tmp/tabswitcher-demo.txt", atomically: true, encoding: .utf8)
+        try? report.write(toFile: statusReportPath, atomically: true, encoding: .utf8)
     }
 
     @objc private func copyDiagnostics() {
