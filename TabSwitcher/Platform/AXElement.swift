@@ -36,6 +36,13 @@ final class AXElement: @unchecked Sendable {
     func string(_ attribute: String) -> String? { copy(attribute) as? String }
     func bool(_ attribute: String) -> Bool { copy(attribute) as? Bool ?? false }
 
+    /// Single-element attributes such as `kAXFocusedWindow` return one element rather
+    /// than an array.
+    func copyElement(_ attribute: String) -> AXElement? {
+        guard let raw = copy(attribute), CFGetTypeID(raw) == AXUIElementGetTypeID() else { return nil }
+        return AXElement(raw as! AXUIElement, pid: pid)
+    }
+
     func elements(_ attribute: String) -> [AXElement] {
         guard let raw = copy(attribute) as? [AXUIElement] else { return [] }
         return raw.map { AXElement($0, pid: pid) }

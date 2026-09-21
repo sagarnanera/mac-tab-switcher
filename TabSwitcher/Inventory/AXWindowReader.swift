@@ -42,6 +42,11 @@ enum AXWindowReader {
         }
     }
 
+    /// Diagnostic: which window ids the remote-token probe can reach for a process.
+    static func probeRemoteWindowIDs(pid: pid_t) -> Set<CGWindowID> {
+        Set(remoteWindows(pid: pid).compactMap { $0.windowID })
+    }
+
     private static func read(pid: pid_t, bruteForce: Bool) -> [AXWindow] {
         guard !AXResponsiveness.shared.isUnresponsive(pid) else { return [] }
         let app = AXElement.application(pid: pid)
@@ -78,27 +83,27 @@ enum AXWindowReader {
     /// caller only asks for it when the Window Server has proven a window exists that
     /// accessibility declined to hand over. Probing stops early on repeated failure,
     /// because a live process answers its low ids quickly.
-    private static func remoteWindows(pid: pid_t, probeLimit: UInt64 = 256) -> [AXElement] {
+    /// Probes the full range rather than stopping after a run of misses.
+    ///
+    /// An earlier version bailed after 24 consecutive misses, on the assumption that
+    /// window elements cluster at low ids. They do not — a long-running app's windows
+    /// sit well above its menus, buttons and other elements, so the early bail found
+    /// nothing and every off-Space window ended up with no element to raise. The only
+    /// bail now is an unresponsive process, which the breaker already tracks.
+    ///
+    /// Cost is ~1000 cheap cross-process calls, paid only for processes the Window
+    /// Server has proven own a window accessibility is withholding.
+    private static func remoteWindows(pid: pid_t, probeLimit: UInt64 = 1000) -> [AXElement] {
         guard PrivateAPI.has(.remoteToken) else { return [] }
         var found: [AXElement] = []
-        var consecutiveMisses = 0
 
         for elementID in 0..<probeLimit {
             guard !AXResponsiveness.shared.isUnresponsive(pid) else { break }
-            guard let raw = PrivateAPI.remoteElement(pid: pid, elementID: elementID) else {
-                consecutiveMisses += 1
-                if consecutiveMisses >= 24 { break }
-                continue
-            }
+            guard let raw = PrivateAPI.remoteElement(pid: pid, elementID: elementID) else { continue }
             let element = AXElement(raw, pid: pid)
             element.setMessagingTimeout(messagingTimeout)
-            if element.role == kAXWindowRole as String {
-                found.append(element)
-                consecutiveMisses = 0
-            } else {
-                consecutiveMisses += 1
-                if consecutiveMisses >= 24 { break }
-            }
+            guard element.role == kAXWindowRole as String else { continue }
+            found.append(element)
         }
         return found
     }

@@ -74,7 +74,7 @@ final class WindowActivator {
         }
 
         raise(window, element: element, target: target)
-        if await landed(on: target) {
+        if await landed(window, on: target) {
             await store.noteActivation(pid: window.pid, windowID: window.id)
             return .landed
         }
@@ -83,13 +83,18 @@ final class WindowActivator {
         // window between the last discovery pass and now.
         element = reresolve(window)
         raise(window, element: element, target: target)
-        if await landed(on: target) {
+        if await landed(window, on: target) {
             await store.noteActivation(pid: window.pid, windowID: window.id)
             return .landedAfterRetry
         }
 
         let front = NSWorkspace.shared.frontmostApplication?.localizedName ?? "nothing"
-        return .failed("frontmost is \(front), wanted \(target.localizedName ?? "pid \(window.pid)")")
+        let hadElement = element != nil
+        return .failed(
+            "frontmost is \(front), wanted \"\(window.title)\" of "
+            + "\(target.localizedName ?? "pid \(window.pid)") "
+            + "(ax element: \(hadElement ? "yes" : "MISSING"), window id \(window.id))"
+        )
     }
 
     // MARK: - Steps
@@ -118,9 +123,56 @@ final class WindowActivator {
     /// Accessibility writes are serviced asynchronously on the target's own main
     /// thread, so there is nothing to await. 150ms is long enough for a responsive app
     /// and short enough to retry inside one user-perceptible beat.
-    private func landed(on target: NSRunningApplication) async -> Bool {
-        try? await Task.sleep(for: .milliseconds(150))
+    ///
+    /// Verifies the **window**, not just the app. Checking only the frontmost process
+    /// reports success whenever the right app comes forward with the wrong window in
+    /// front — which is precisely the failure this app exists to prevent, so it must
+    /// not be the failure its own test cannot see.
+    /// Bundle identifier macOS reports as frontmost mid Space transition. It is not a
+    /// failure — it means the switch we asked for is still animating.
+    private static let transitionBundleIDs: Set<String> = [
+        "com.apple.loginwindow",
+        "com.apple.WindowManager",
+        "com.apple.dock",
+    ]
+
+    private func landed(_ window: WindowEntry, on target: NSRunningApplication) async -> Bool {
+        // Raising a window on another Space triggers a Space switch that takes far
+        // longer than a same-Space raise — several hundred milliseconds of animation,
+        // during which macOS reports loginwindow as frontmost. A single short check
+        // read that as failure and fired a second activation into the middle of the
+        // animation, which is why cross-Space switches appeared not to work at all.
+        let deadline = ContinuousClock().now + .milliseconds(window.flags.contains(.otherSpace) ? 2000 : 600)
+        let clock = ContinuousClock()
+
+        while clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(100))
+            guard let front = NSWorkspace.shared.frontmostApplication else { continue }
+            if let bundleID = front.bundleIdentifier, Self.transitionBundleIDs.contains(bundleID) {
+                continue                                  // still transitioning
+            }
+            guard front.processIdentifier == target.processIdentifier else {
+                continue                                  // a different app is up; keep waiting
+            }
+            if focusedMatches(window) { return true }
+        }
         return NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier
+            && focusedMatches(window)
+    }
+
+    /// Verifies the **window**, not just the app. Checking only the frontmost process
+    /// reports success whenever the right app comes forward with the wrong window in
+    /// front — precisely the failure this app exists to prevent.
+    private func focusedMatches(_ window: WindowEntry) -> Bool {
+        let app = AXElement.application(pid: window.pid)
+        app.setMessagingTimeout(0.25)
+        guard let focused = app.copyElement(kAXFocusedWindowAttribute as String) else {
+            // Nothing to check against: trust the app-level result rather than loop on
+            // a question that cannot be answered.
+            return true
+        }
+        if let id = focused.windowID { return id == window.id }
+        return focused.title == window.title
     }
 
     private func reresolve(_ window: WindowEntry) -> AXElement? {

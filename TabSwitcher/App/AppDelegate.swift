@@ -44,6 +44,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try? await Task.sleep(for: .seconds(4))
             await Self.writeStatusReport(environment)
             if demoMode { environment.controller.summonForDemo() }
+            if CommandLine.arguments.contains("--test-activate") {
+                await Self.testLevelTwoActivation(environment)
+            }
         }
     }
 
@@ -109,6 +112,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.menu = menu
     }
 
+    /// Exercises the level-two path directly: pick an app with several windows and
+    /// activate one that is *not* its frontmost, which is the case the app exists for
+    /// and the only one a hotkey cannot be scripted to reproduce.
+    private static func testLevelTwoActivation(_ environment: AppEnvironment) async {
+        var log = ""
+        let snapshot = await environment.store.current
+        guard let group = snapshot.groups.first(where: { $0.windows.count > 1 }) else {
+            try? "no app with more than one window".write(
+                toFile: "/tmp/tabswitcher-activate.txt", atomically: true, encoding: .utf8)
+            return
+        }
+
+        for (index, window) in group.windows.enumerated().dropFirst() {
+            let element = await environment.store.element(for: window.id)
+            log += "\n--- target \(index): \"\(window.title)\" id \(window.id)\n"
+            log += "    ax element: \(element == nil ? "MISSING" : "present")\n"
+            let probed = AXWindowReader.probeRemoteWindowIDs(pid: window.pid)
+            log += "    brute force found ids: \(probed.sorted().prefix(12).map(String.init).joined(separator: ", "))\n"
+            log += "    target in that set: \(probed.contains(window.id))\n"
+            log += "    flags: minimized=\(window.flags.contains(.minimized)) "
+            log += "otherSpace=\(window.flags.contains(.otherSpace)) "
+            log += "main=\(window.flags.contains(.main))\n"
+
+            let outcome = await environment.activator.activate(window)
+            log += "    outcome: \(outcome)\n"
+
+            let app = AXElement.application(pid: window.pid)
+            app.setMessagingTimeout(0.5)
+            let focusedTitle = app.copyElement(kAXFocusedWindowAttribute as String)?.title ?? "(none)"
+            let focusedID = app.copyElement(kAXFocusedWindowAttribute as String)?.windowID
+            log += "    app's focused window now: \"\(focusedTitle)\" id \(focusedID.map(String.init) ?? "?")\n"
+            log += "    matches target: \(focusedID == window.id)\n"
+            try? await Task.sleep(for: .milliseconds(500))
+        }
+
+        let header = """
+            level-two activation test
+            app: \(group.app.name) (\(group.windows.count) windows)
+            frontmost window per grouping: "\(group.frontmost.title)"
+
+            """
+        try? (header + log).write(
+            toFile: "/tmp/tabswitcher-activate.txt", atomically: true, encoding: .utf8)
+    }
+
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
     }
@@ -161,7 +209,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// mode.
     private static func writeStatusReport(_ environment: AppEnvironment) async {
         let snapshot = await environment.store.current
+        let timings = await environment.store.timings
+            .sorted { $0.key < $1.key }
+            .map { "\($0.key) \(String(format: "%.0f", $0.value.seconds * 1000))ms" }
+            .joined(separator: ", ")
         var report = """
+            discovery: \(timings)
+
             accessibility:    \(AXPermission.isTrusted() ? "granted" : "NOT granted")
             screen recording: \(CGPreflightScreenCaptureAccess() ? "granted" : "NOT granted")
 
