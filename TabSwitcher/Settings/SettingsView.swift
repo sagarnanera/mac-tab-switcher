@@ -47,6 +47,47 @@ struct SettingsView: View {
         }
     }
 
+    /// The row along the bottom of the sidebar.
+    ///
+    /// Icon-only, because these are not destinations: putting them in the list above
+    /// would make a four-pane settings window look like it had six, and the two things
+    /// here are used once each in the life of an install. Tooltips carry the meaning,
+    /// which is the trade an unlabelled icon always makes.
+    private var sidebarFooter: some View {
+        HStack(spacing: 16) {
+            Button { NSWorkspace.shared.open(ProjectLinks.repository) } label: {
+                Image(systemName: "chevron.left.forwardslash.chevron.right")
+            }
+            .help("View the source on GitHub")
+            // Without this a screen reader reads the SF Symbol's own name — "Embed
+            // Code" — because `help` is a tooltip and not a label.
+            .accessibilityLabel("View the source on GitHub")
+
+            Button(action: reportBug) {
+                Image(systemName: "ladybug")
+            }
+            .help("Report a bug — copies diagnostics to the clipboard first")
+            .accessibilityLabel("Report a bug. Copies diagnostics to the clipboard.")
+
+            Spacer()
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .imageScale(.large)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 14)
+    }
+
+    /// The issue form asks for diagnostics, and asking someone to go and run a terminal
+    /// command in the middle of reporting a bug is how bug reports stop arriving. This
+    /// puts the report on the clipboard first, which the tooltip says so that the
+    /// clipboard being overwritten is never a surprise.
+    private func reportBug() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(Diagnostics.report(), forType: .string)
+        NSWorkspace.shared.open(ProjectLinks.reportBug)
+    }
+
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             List(Pane.allCases, selection: $pane) { pane in
@@ -66,6 +107,7 @@ struct SettingsView: View {
             // There is nothing to gain either way. Four fixed panes in a 720pt window do
             // not benefit from hiding their own navigation.
             .toolbar(removing: .sidebarToggle)
+            .safeAreaInset(edge: .bottom) { sidebarFooter }
         } detail: {
             Group {
                 switch pane ?? .general {

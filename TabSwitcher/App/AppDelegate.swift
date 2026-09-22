@@ -552,18 +552,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         try? report.write(toFile: statusReportPath, atomically: true, encoding: .utf8)
     }
-
-    @objc private func copyDiagnostics() {
-        let report = """
-            TabSwitcher diagnostics
-
-            accessibility: \(AXPermission.isTrusted() ? "granted" : "not granted")
-            secure input: \(SecureInput.isEnabled ? "active" : "inactive")
-
-            private API availability:
-            \(Diagnostics.capabilityReport())
-            """
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(report, forType: .string)
-    }
 }

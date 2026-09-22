@@ -8,6 +8,12 @@ Versions follow [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A footer in the settings sidebar with links to the source and to the bug report form.
+  Reporting a bug copies the diagnostics to the clipboard first, because the issue form
+  asks for them.
+
 ### Fixed
 
 - The window strip sometimes opened and closed too fast to see, or stepped in at the
