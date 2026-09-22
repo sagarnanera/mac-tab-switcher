@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest something
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two things are already answered and will be closed as duplicates:
+
+        - **Browser tab switching.** A background tab has no capturable pixels by any
+          mechanism — not ScreenCaptureKit, not accessibility, not even a browser
+          extension. See `ARCHITECTURE.md` §8.
+        - **Homebrew.** Casks have required notarization since September 2026, and this
+          app has no Apple Developer ID yet.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is the problem?
+      description: |
+        The situation, not the solution. A described problem can be solved in ways you
+        have not thought of; a described solution usually cannot.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What did you have in mind?
+      description: Optional.
+    validations:
+      required: false

@@ -1,0 +1,88 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Window enumeration differs by macOS version, by permission state and by which apps
+        happen to be running. A description without the diagnostics below is usually not
+        reproducible, so both boxes are required.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what happened instead.
+      placeholder: |
+        1. Held ⌥ and pressed Tab
+        2. Rested on VS Code, which has 5 windows
+        3. Expected the window strip to appear; nothing happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnose
+    attributes:
+      label: Output of --diagnose
+      description: |
+        Run this in Terminal and paste the whole thing.
+        It lists no personal data beyond your window titles — redact those if you need to.
+      value: |
+        <details><summary>--diagnose</summary>
+
+        ```
+        # paste the output of:
+        # /Applications/TabSwitcher.app/Contents/MacOS/TabSwitcher --diagnose
+        ```
+        </details>
+    validations:
+      required: true
+
+  - type: textarea
+    id: status
+    attributes:
+      label: Contents of /tmp/tabswitcher-status.txt
+      description: |
+        The app writes this on every launch. It matters because `--diagnose` reports the
+        permissions of the *terminal* that ran it, not the app's — TCC attributes to the
+        responsible process. This file is the app's own view, and the two disagreeing is
+        itself a common cause of confusion.
+      value: |
+        <details><summary>status</summary>
+
+        ```
+        # paste the output of:
+        # cat /tmp/tabswitcher-status.txt
+        ```
+        </details>
+    validations:
+      required: true
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "26.1 (25B78)"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: TabSwitcher version
+      description: Menu bar icon → Settings, or the version in the About box.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install it?
+      options:
+        - Install script
+        - Built from source
+        - Other
+    validations:
+      required: true

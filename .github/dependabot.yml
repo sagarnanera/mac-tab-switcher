@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Actions only. Swift package updates are deliberately not automated: Sparkle is the
+  # one dependency, it sits in the update path, and a bump to it deserves a human
+  # reading the changelog rather than a bot opening a PR.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3

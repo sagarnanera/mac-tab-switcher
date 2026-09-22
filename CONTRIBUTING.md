@@ -58,6 +58,13 @@ Anything that can be a pure function should be one.
 
 `ARCHITECTURE.md` §9 lists every debug flag.
 
+## Formatting
+
+There is no formatter and no lint gate. Match the surrounding code. Comments explain why
+something is the way it is rather than restating what the line does, and that convention
+matters more here than brace placement — most of this app's hazards are invisible in the
+code and survive only in the comment next to them.
+
 ## Commits
 
 Explain *why*, not what — the diff already says what. If a change reverses an earlier
