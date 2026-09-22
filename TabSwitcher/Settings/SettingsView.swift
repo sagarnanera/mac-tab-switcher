@@ -54,28 +54,55 @@ struct SettingsView: View {
     /// here are used once each in the life of an install. Tooltips carry the meaning,
     /// which is the trade an unlabelled icon always makes.
     private var sidebarFooter: some View {
-        HStack(spacing: 16) {
-            Button { NSWorkspace.shared.open(ProjectLinks.repository) } label: {
-                Image(systemName: "chevron.left.forwardslash.chevron.right")
-            }
-            .help("View the source on GitHub")
-            // Without this a screen reader reads the SF Symbol's own name — "Embed
-            // Code" — because `help` is a tooltip and not a label.
-            .accessibilityLabel("View the source on GitHub")
+        HStack(spacing: 4) {
+            footerButton(
+                symbol: "chevron.left.forwardslash.chevron.right",
+                label: "View the source on GitHub"
+            ) { NSWorkspace.shared.open(ProjectLinks.repository) }
 
-            Button(action: reportBug) {
-                Image(systemName: "ladybug")
-            }
-            .help("Report a bug — copies diagnostics to the clipboard first")
-            .accessibilityLabel("Report a bug. Copies diagnostics to the clipboard.")
+            footerButton(
+                symbol: "ladybug",
+                label: "Report a bug. Copies diagnostics to the clipboard.",
+                tooltip: "Report a bug — copies diagnostics to the clipboard first",
+                action: reportBug
+            )
 
             Spacer()
         }
+        // 18, not 20: the glyphs are centred in a 24pt box, so the box starts slightly
+        // left of where its ink lands. Measured against the pane icons above, whose ink
+        // begins between 18.5 and 22pt from the column edge.
+        .padding(.leading, 18)
+        .padding(.bottom, 14)
+    }
+
+    /// One footer icon, in a fixed square.
+    ///
+    /// The square is the point. These two symbols have very different widths —
+    /// `chevron.left.forwardslash.chevron.right` is wide and angular, `ladybug` compact
+    /// and dense — so laying them out by their own sizes gave an uneven rhythm that read
+    /// as misalignment. A fixed box puts them on a grid regardless of what is drawn in
+    /// it, and gives each one a click target larger than its ink.
+    private func footerButton(
+        symbol: String,
+        label: String,
+        tooltip: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                // An explicit size rather than imageScale, which resolves differently
+                // per symbol and reintroduces the mismatch.
+                .font(.system(size: 13, weight: .regular))
+                .frame(width: 24, height: 24)
+                .contentShape(.rect)
+        }
         .buttonStyle(.borderless)
         .foregroundStyle(.secondary)
-        .imageScale(.large)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 14)
+        .help(tooltip ?? label)
+        // `help` is a tooltip and never reaches a screen reader, which otherwise
+        // announces the SF Symbol's own name — "Embed Code", "Ladybug".
+        .accessibilityLabel(label)
     }
 
     /// The issue form asks for diagnostics, and asking someone to go and run a terminal
