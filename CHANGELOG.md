@@ -8,21 +8,7 @@ Versions follow [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
-
-- A footer in the settings sidebar with links to the source and to the bug report form.
-  Reporting a bug copies the diagnostics to the clipboard first, because the issue form
-  asks for them.
-
-### Fixed
-
-- The window strip sometimes opened and closed too fast to see, or stepped in at the
-  second or third tile. A stationary mouse pointer was enough to cause both.
-- Preview sizes above about 300pt overflowed the settings pane and distorted the sample.
-- The settings sidebar jerked when collapsed or reopened. It no longer collapses, which
-  is also how System Settings behaves.
-
-## [0.1.0] — unreleased
+## [0.1.0] — 2026-09-23
 
 First release.
 
@@ -45,6 +31,8 @@ First release.
 - A check of the app's own code signature on launch, because a damaged bundle loses its
   permissions silently and otherwise just looks broken.
 - No network code of any kind. No telemetry, no update check.
+- Links to the source and to the bug report form in the settings sidebar. Reporting a bug
+  copies the diagnostics to the clipboard first, because the issue form asks for them.
 
 ### Known limitations
 
