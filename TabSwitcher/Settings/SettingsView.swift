@@ -11,9 +11,15 @@ import SwitcherCore
 /// idiom for something this ordinary.
 struct SettingsView: View {
     @Bindable var preferences: Preferences
+    /// Which pane to show first. Defaults to General; `--settings <pane>` overrides it,
+    /// because several settings can only be judged by looking at them and reaching the
+    /// pane by hand is not something a script can do.
+    var initialPane: Pane = .general
     let onChange: () -> Void
 
-    @State private var pane: Pane? = .general
+    @State private var pane: Pane?
+    /// Pinned open. See the sidebar's `toolbar(removing:)` below for why.
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     enum Pane: String, CaseIterable, Identifiable {
         case general, shortcut, appearance, permissions
@@ -41,12 +47,94 @@ struct SettingsView: View {
         }
     }
 
+    /// The row along the bottom of the sidebar.
+    ///
+    /// Icon-only, because these are not destinations: putting them in the list above
+    /// would make a four-pane settings window look like it had six, and the two things
+    /// here are used once each in the life of an install. Tooltips carry the meaning,
+    /// which is the trade an unlabelled icon always makes.
+    private var sidebarFooter: some View {
+        HStack(spacing: 4) {
+            footerButton(
+                symbol: "chevron.left.forwardslash.chevron.right",
+                label: "View the source on GitHub"
+            ) { NSWorkspace.shared.open(ProjectLinks.repository) }
+
+            footerButton(
+                symbol: "ladybug",
+                label: "Report a bug. Copies diagnostics to the clipboard.",
+                tooltip: "Report a bug — copies diagnostics to the clipboard first",
+                action: reportBug
+            )
+
+            Spacer()
+        }
+        // 18, not 20: the glyphs are centred in a 24pt box, so the box starts slightly
+        // left of where its ink lands. Measured against the pane icons above, whose ink
+        // begins between 18.5 and 22pt from the column edge.
+        .padding(.leading, 18)
+        .padding(.bottom, 14)
+    }
+
+    /// One footer icon, in a fixed square.
+    ///
+    /// The square is the point. These two symbols have very different widths —
+    /// `chevron.left.forwardslash.chevron.right` is wide and angular, `ladybug` compact
+    /// and dense — so laying them out by their own sizes gave an uneven rhythm that read
+    /// as misalignment. A fixed box puts them on a grid regardless of what is drawn in
+    /// it, and gives each one a click target larger than its ink.
+    private func footerButton(
+        symbol: String,
+        label: String,
+        tooltip: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                // An explicit size rather than imageScale, which resolves differently
+                // per symbol and reintroduces the mismatch.
+                .font(.system(size: 13, weight: .regular))
+                .frame(width: 24, height: 24)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .help(tooltip ?? label)
+        // `help` is a tooltip and never reaches a screen reader, which otherwise
+        // announces the SF Symbol's own name — "Embed Code", "Ladybug".
+        .accessibilityLabel(label)
+    }
+
+    /// The issue form asks for diagnostics, and asking someone to go and run a terminal
+    /// command in the middle of reporting a bug is how bug reports stop arriving. This
+    /// puts the report on the clipboard first, which the tooltip says so that the
+    /// clipboard being overwritten is never a surprise.
+    private func reportBug() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(Diagnostics.report(), forType: .string)
+        NSWorkspace.shared.open(ProjectLinks.reportBug)
+    }
+
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             List(Pane.allCases, selection: $pane) { pane in
                 Label(pane.title, systemImage: pane.symbol).tag(pane)
             }
             .navigationSplitViewColumnWidth(min: 160, ideal: 172, max: 200)
+            // The sidebar does not collapse, which is also what System Settings does.
+            //
+            // Collapsing it in a fixed-size window is not a small visual flaw, it is
+            // unresolvable. The detail column expands to the full width the instant the
+            // toggle is hit, while the sidebar is still animating out, so the content
+            // slides underneath it and snaps. Making the window resizable trades that
+            // for something worse: collapse cannot shrink past the minimum width, while
+            // reopening still adds the sidebar's width back, so the window grows by
+            // ~173pt on every cycle.
+            //
+            // There is nothing to gain either way. Four fixed panes in a 720pt window do
+            // not benefit from hiding their own navigation.
+            .toolbar(removing: .sidebarToggle)
+            .safeAreaInset(edge: .bottom) { sidebarFooter }
         } detail: {
             Group {
                 switch pane ?? .general {
@@ -58,6 +146,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .navigationTitle(pane?.title ?? "Settings")
+            .onAppear { if pane == nil { pane = initialPane } }
         }
         .frame(width: 720, height: 460)
         .onChange(of: preferences.tileWidth) { _, _ in onChange() }
@@ -228,7 +317,7 @@ private struct AppearancePane: View {
             Section("Preview size") {
                 LabeledContent("Width") {
                     HStack {
-                        Slider(value: $preferences.tileWidth, in: 120...400, step: 10)
+                        Slider(value: $preferences.tileWidth, in: TileSizing.Metrics.widthRange, step: 10)
                             .frame(width: 200)
                         Text("\(Int(preferences.tileWidth)) pt")
                             .monospacedDigit()
@@ -258,8 +347,18 @@ private struct AppearancePane: View {
         .formStyle(.grouped)
     }
 
+    /// Drawn to scale *within the range*, not at half the real size.
+    ///
+    /// Three tiles at half of 400pt plus gutters is 620pt, and the pane is roughly 470pt
+    /// wide: past about 300pt the row overflowed, the tiles were squeezed out of their
+    /// aspect ratio and the section grew. What the sample is for is comparing one
+    /// setting to another, so mapping the slider's range onto a width that always fits
+    /// preserves everything it was communicating.
     private var previewSample: some View {
-        let width = preferences.tileWidth / 2
+        let range = TileSizing.Metrics.widthRange
+        let fraction = (preferences.tileWidth - range.lowerBound)
+            / (range.upperBound - range.lowerBound)
+        let width = 44 + fraction * 84
         return HStack(spacing: 10) {
             ForEach(0..<3, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 6)

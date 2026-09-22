@@ -286,6 +286,8 @@ Debug affordances, all on the built binary:
 | `--demo` | summons the overlay without a keystroke — WindowServer refuses synthesised modifier keys, so it cannot be scripted |
 | `--demo --demo-strip` | as above, then expands a window strip |
 | `--demo-a11y=contrast,transparency,motion` | forces the Accessibility branches on, without touching the machine's own settings — every one of them is otherwise unreachable on a default Mac |
+| `--settings <pane>` | opens Settings straight to `general`/`shortcut`/`appearance`/`permissions`; a script cannot click a sidebar row |
+| `--test-login-item` | registers and unregisters the login item, writing the result to `/tmp/tabswitcher-loginitem.txt`. `SMAppService.mainApp` describes the calling bundle, so this is unreachable from a test binary |
 | `--demo --demo-strip --dump-a11y` | walks the overlay's own accessibility tree to `/tmp/tabswitcher-a11y.txt` — what a screen reader would find, without switching VoiceOver on |
 | `--test-activate` | activates every non-frontmost window of a multi-window app and reports whether focus landed |
 | `--test-minimized` | minimizes a throwaway TextEdit window and proves pixels are still capturable |

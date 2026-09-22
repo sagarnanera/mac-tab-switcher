@@ -8,7 +8,7 @@ Versions follow [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.1.0] — unreleased
+## [0.1.0] — 2026-09-23
 
 First release.
 
@@ -31,6 +31,8 @@ First release.
 - A check of the app's own code signature on launch, because a damaged bundle loses its
   permissions silently and otherwise just looks broken.
 - No network code of any kind. No telemetry, no update check.
+- Links to the source and to the bug report form in the settings sidebar. Reporting a bug
+  copies the diagnostics to the clipboard first, because the issue form asks for them.
 
 ### Known limitations
 

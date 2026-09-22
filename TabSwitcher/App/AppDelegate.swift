@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import ServiceManagement
 import SwiftUI
 
 @MainActor
@@ -103,6 +104,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     try? await Task.sleep(for: .seconds(4))
                     environment.controller.revealStripForDemo()
                 }
+            }
+            if CommandLine.arguments.contains("--test-login-item") {
+                Self.testLoginItem()
             }
             if CommandLine.arguments.contains("--dump-a11y") {
                 // SwiftUI has not laid out the strip at the instant the reveal is
@@ -380,6 +384,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
     }
 
+    /// `--settings appearance` opens straight to a pane. Several settings can only be
+    /// judged by looking at them, and a script cannot click a sidebar row.
+    private static func requestedSettingsPane() -> SettingsView.Pane {
+        guard let index = CommandLine.arguments.firstIndex(of: "--settings"),
+              CommandLine.arguments.indices.contains(index + 1),
+              let pane = SettingsView.Pane(rawValue: CommandLine.arguments[index + 1])
+        else { return .general }
+        return pane
+    }
+
     @objc private func openSettings() {
         guard let environment else { return }
         // An accessory app cannot reliably bring a window to the front — it has no Dock
@@ -400,7 +414,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         window.title = "TabSwitcher Settings"
         window.contentView = NSHostingView(
-            rootView: SettingsView(preferences: environment.preferences) { [weak environment] in
+            rootView: SettingsView(
+                preferences: environment.preferences,
+                initialPane: Self.requestedSettingsPane()
+            ) { [weak environment] in
                 environment?.applyPreferences()
             }
         )
@@ -425,6 +442,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// terminal's grants rather than the app's. Anything permission-dependent has to be
     /// measured in here, which is why this runs on every launch and not only in demo
     /// mode.
+    /// Registers and unregisters the login item, reporting what the system said.
+    ///
+    /// `SMAppService.mainApp` describes the *calling* bundle, so this cannot be checked
+    /// from a script or a test binary — only from inside the app, which is why it is a
+    /// flag rather than a unit test. It also depends on where the app is installed: a
+    /// bundle in a temporary or non-standard location registers and then silently fails
+    /// to launch, so the path is reported alongside the status.
+    private static func testLoginItem() {
+        func status(_ value: SMAppService.Status) -> String {
+            switch value {
+            case .enabled: "enabled"
+            case .requiresApproval: "requiresApproval (user must allow it in System Settings)"
+            case .notRegistered: "notRegistered"
+            case .notFound: "notFound"
+            @unknown default: "unknown"
+            }
+        }
+        func status() -> String { status(SMAppService.mainApp.status) }
+
+        var report = "login item test\n\n"
+        report += "bundle:  \(Bundle.main.bundlePath)\n"
+        report += "initial: \(status())\n"
+
+        // Captured as a status, not as `isEnabled`. `requiresApproval` means macOS holds
+        // the registration and is waiting on the user, so it is registered as far as
+        // restoring is concerned — reading only `isEnabled` would treat it as off and
+        // leave this test having quietly cancelled a pending login item.
+        let initialStatus = SMAppService.mainApp.status
+        let wasRegistered = initialStatus == .enabled || initialStatus == .requiresApproval
+
+        if let error = LaunchAtLogin.set(true) {
+            report += "register FAILED: \(error)\n"
+        } else {
+            report += "after register: \(status())  isEnabled=\(LaunchAtLogin.isEnabled)"
+            report += "  needsApproval=\(LaunchAtLogin.needsApproval)\n"
+        }
+
+        if let error = LaunchAtLogin.set(false) {
+            report += "unregister FAILED: \(error)\n"
+        } else {
+            report += "after unregister: \(status())  isEnabled=\(LaunchAtLogin.isEnabled)\n"
+        }
+
+        // Left as it was found: a diagnostic that changes a user setting is a bug — and
+        // one that fails to put it back and says nothing is a worse one.
+        if wasRegistered, let error = LaunchAtLogin.set(true) {
+            report += "RESTORE FAILED: \(error)\n"
+            report += "  the login item was registered before this ran and is not now\n"
+        }
+        let finalStatus = SMAppService.mainApp.status
+        if finalStatus == initialStatus {
+            report += "restored to: \(status(finalStatus))\n"
+        } else {
+            report += "RESTORE MISMATCH: expected \(status(initialStatus)), got \(status(finalStatus))\n"
+        }
+
+        try? report.write(toFile: "/tmp/tabswitcher-loginitem.txt", atomically: true, encoding: .utf8)
+    }
+
     /// Walks the overlay's own accessibility tree and writes what a screen reader would
     /// find there.
     ///
@@ -490,19 +566,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             }
         }
         try? report.write(toFile: statusReportPath, atomically: true, encoding: .utf8)
-    }
-
-    @objc private func copyDiagnostics() {
-        let report = """
-            TabSwitcher diagnostics
-
-            accessibility: \(AXPermission.isTrusted() ? "granted" : "not granted")
-            secure input: \(SecureInput.isEnabled ? "active" : "inactive")
-
-            private API availability:
-            \(Diagnostics.capabilityReport())
-            """
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(report, forType: .string)
     }
 }

@@ -223,7 +223,20 @@ public struct OverlayState: Sendable, Equatable {
         }
         // Keep the selection pinned to the same window across a refresh. A list that
         // re-sorts under the user mid-switch is worse than a slightly stale one.
-        if let previouslySelected, let found = locate(previouslySelected) {
+        //
+        // Filtering is handled separately because it has its own, flat index space and
+        // `locate` only speaks the grouped one. Letting it answer here left a `.grouped`
+        // selection in place while the filter view was still on screen: nothing appeared
+        // highlighted, and the next keystroke resumed from the top of the list, because
+        // `moveFlat` treats a non-flat selection as index 0.
+        if isFiltering {
+            if let previouslySelected,
+               let index = results.firstIndex(where: { $0.window.id == previouslySelected }) {
+                selection = .flat(index)
+            } else {
+                selection = clamped(selection)
+            }
+        } else if let previouslySelected, let found = locate(previouslySelected) {
             selection = found
         } else {
             selection = clamped(selection)
@@ -345,13 +358,22 @@ public struct OverlayState: Sendable, Equatable {
         results.prefix(limit).map(\.window)
     }
 
+    /// Where a window now sits, so a refresh can keep the selection on the same thing
+    /// rather than on the same index.
+    ///
+    /// Which *level* the selection is on is preserved separately, and deliberately. On
+    /// the app row the selection means "this app", and the window it happens to resolve
+    /// to — the app's first — is an implementation detail. Window order changes between
+    /// refreshes as the MRU updates, so following the window would silently move the
+    /// selection down into the strip and land it on whichever index that window drifted
+    /// to. That is what made a reveal sometimes start at the second or third tile.
     private func locate(_ id: CGWindowID) -> Selection? {
         for (appIndex, group) in groups.enumerated() {
             guard let windowIndex = group.windows.firstIndex(where: { $0.id == id }) else { continue }
-            if case .grouped(_, let selected) = selection, selected == nil, windowIndex == 0 {
+            if case .grouped(_, let selected) = selection, selected == nil {
                 return .grouped(app: appIndex, window: nil)
             }
-            return .grouped(app: appIndex, window: windowIndex == 0 && !isStripRevealed ? nil : windowIndex)
+            return .grouped(app: appIndex, window: windowIndex)
         }
         return nil
     }
