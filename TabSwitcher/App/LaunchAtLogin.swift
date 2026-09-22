@@ -12,6 +12,22 @@ enum LaunchAtLogin {
         SMAppService.mainApp.status == .enabled
     }
 
+    /// Whether macOS holds a registration for this bundle, approved or not.
+    ///
+    /// `requiresApproval` counts: the registration exists and the system is merely
+    /// waiting on the user. `notFound` and `notRegistered` both mean there is none —
+    /// they differ only in whether macOS has ever held a record.
+    ///
+    /// Written as the two cases that mean *nothing is registered*, so a status Apple
+    /// adds later is treated as registered. That is the safe direction for both callers:
+    /// one unregisters it when asked to switch off, the other restores it afterwards.
+    /// This lives here, and is the single definition, because the same question was
+    /// previously asked three times in two different spellings that agreed only by
+    /// coincidence on today's statuses.
+    static func isRegistered(_ status: SMAppService.Status) -> Bool {
+        status != .notRegistered && status != .notFound
+    }
+
     /// - Returns: an error message if the change failed, nil on success.
     @discardableResult
     static func set(_ enabled: Bool) -> String? {
@@ -22,8 +38,11 @@ enum LaunchAtLogin {
                 if SMAppService.mainApp.status != .enabled {
                     try SMAppService.mainApp.register()
                 }
-            } else if SMAppService.mainApp.status != .notRegistered &&
-                        SMAppService.mainApp.status != .notFound {
+            } else if isRegistered(SMAppService.mainApp.status) {
+                // `requiresApproval` unregisters too, which the original `== .enabled`
+                // guard missed: macOS holds the registration and is only waiting on the
+                // user, so switching the setting off while it was pending left the
+                // registration in place while the toggle read as off.
                 try SMAppService.mainApp.unregister()
             }
             return nil
