@@ -22,7 +22,8 @@ enum LaunchAtLogin {
                 if SMAppService.mainApp.status != .enabled {
                     try SMAppService.mainApp.register()
                 }
-            } else if SMAppService.mainApp.status == .enabled {
+            } else if SMAppService.mainApp.status != .notRegistered &&
+                        SMAppService.mainApp.status != .notFound {
                 try SMAppService.mainApp.unregister()
             }
             return nil

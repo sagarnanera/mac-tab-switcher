@@ -450,8 +450,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// bundle in a temporary or non-standard location registers and then silently fails
     /// to launch, so the path is reported alongside the status.
     private static func testLoginItem() {
-        func status() -> String {
-            switch SMAppService.mainApp.status {
+        func status(_ value: SMAppService.Status) -> String {
+            switch value {
             case .enabled: "enabled"
             case .requiresApproval: "requiresApproval (user must allow it in System Settings)"
             case .notRegistered: "notRegistered"
@@ -459,6 +459,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             @unknown default: "unknown"
             }
         }
+        func status() -> String { status(SMAppService.mainApp.status) }
 
         var report = "login item test\n\n"
         report += "bundle:  \(Bundle.main.bundlePath)\n"
@@ -485,13 +486,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
 
         // Left as it was found: a diagnostic that changes a user setting is a bug — and
-        // one that fails to put it back and says nothing is a worse one, so the error is
-        // reported rather than discarded.
+        // one that fails to put it back and says nothing is a worse one.
         if wasRegistered, let error = LaunchAtLogin.set(true) {
             report += "RESTORE FAILED: \(error)\n"
             report += "  the login item was registered before this ran and is not now\n"
         }
-        report += "restored to: \(status())\n"
+        let finalStatus = SMAppService.mainApp.status
+        if finalStatus == initialStatus {
+            report += "restored to: \(status(finalStatus))\n"
+        } else {
+            report += "RESTORE MISMATCH: expected \(status(initialStatus)), got \(status(finalStatus))\n"
+        }
 
         try? report.write(toFile: "/tmp/tabswitcher-loginitem.txt", atomically: true, encoding: .utf8)
     }
