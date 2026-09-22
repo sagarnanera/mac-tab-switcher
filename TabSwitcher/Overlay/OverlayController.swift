@@ -230,6 +230,29 @@ final class OverlayController: NSObject {
         panel.orderFrontRegardless()
         panel.makeKey()
         reposition()
+        announce()
+    }
+
+    /// Tells a screen reader what just took the keyboard.
+    ///
+    /// An overlay that appears, swallows every keystroke and says nothing is
+    /// indistinguishable from the machine having locked up. Posted as an announcement
+    /// rather than relying on focus moving, because the panel is deliberately
+    /// non-activating: our application never becomes frontmost, so there is no focus
+    /// change for VoiceOver to follow.
+    private func announce() {
+        let state = model.state
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: TileNarration.summary(
+                    appCount: state.groups.count,
+                    windowCount: state.groups.reduce(0) { $0 + $1.windows.count }
+                ),
+                .priority: NSAccessibilityPriorityLevel.high.rawValue,
+            ]
+        )
     }
 
     /// Only ever repositions; the size belongs to AppKit and SwiftUI.

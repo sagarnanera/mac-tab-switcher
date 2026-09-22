@@ -45,6 +45,7 @@ Where to look for a given task:
 | Change what the cycle key does | `Kernels/OverlayStateMachine.swift` |
 | Change when windows are revealed | `Kernels/DwellPolicy.swift` |
 | Change how the overlay looks under an Accessibility setting | `Kernels/AppearanceRules.swift`, never the views |
+| Change what a screen reader says | `Kernels/TileNarration.swift` |
 | A window is missing from the list | `Inventory/WindowFilter.swift`, then `WindowDiscovery.swift` |
 | A window is listed that should not be | `Inventory/CGWindowCandidate.swift` (layer/alpha/size gate) |
 | Previews missing or wrong | `Capture/WindowCapturer.swift`, `ThumbnailStore.swift` |
@@ -270,7 +271,7 @@ adopting it; do not adopt it because a newer OS shipped.
 ## 9. Verifying a change
 
 ```bash
-cd Packages/SwitcherCore && swift test     # 68 tests, no GUI needed
+cd Packages/SwitcherCore && swift test     # 73 tests, no GUI needed
 bash Scripts/build.sh                      # builds, signs, installs to ~/Applications
 bash Scripts/build.sh --run
 bash Scripts/quit.sh
@@ -285,6 +286,7 @@ Debug affordances, all on the built binary:
 | `--demo` | summons the overlay without a keystroke — WindowServer refuses synthesised modifier keys, so it cannot be scripted |
 | `--demo --demo-strip` | as above, then expands a window strip |
 | `--demo-a11y=contrast,transparency,motion` | forces the Accessibility branches on, without touching the machine's own settings — every one of them is otherwise unreachable on a default Mac |
+| `--demo --demo-strip --dump-a11y` | walks the overlay's own accessibility tree to `/tmp/tabswitcher-a11y.txt` — what a screen reader would find, without switching VoiceOver on |
 | `--test-activate` | activates every non-frontmost window of a multi-window app and reports whether focus landed |
 | `--test-minimized` | minimizes a throwaway TextEdit window and proves pixels are still capturable |
 | `--settings`, `--welcome-step N` | open those windows directly |

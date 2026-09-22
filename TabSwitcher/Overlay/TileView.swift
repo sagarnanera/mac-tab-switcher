@@ -15,6 +15,9 @@ struct TileView: View {
     /// discoverable instead of hidden, which is the difference between a power feature
     /// and a secret.
     var shortcutDigit: Int? = nil
+    /// Position within its row, for the spoken label. SwiftUI's own traversal order
+    /// does not match the order the cycle key moves through, so it cannot be inferred.
+    var position: (index: Int, total: Int)? = nil
 
     @Environment(\.overlayAppearance) private var appearance
 
@@ -43,6 +46,21 @@ struct TileView: View {
                 .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : appearance.secondaryText)
                 .frame(width: size.width)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(narration)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// Falls back to a bare position of 1-of-1 when the caller did not supply one, which
+    /// suppresses the positional clause rather than inventing a wrong one.
+    private var narration: String {
+        TileNarration.label(
+            window: window,
+            app: app,
+            index: position?.index ?? 0,
+            total: position?.total ?? 1,
+            windowCount: windowCount
+        )
     }
 
     /// Two concentric rings, not one.

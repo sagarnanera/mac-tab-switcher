@@ -91,6 +91,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     environment.controller.revealStripForDemo()
                 }
             }
+            if CommandLine.arguments.contains("--dump-a11y") {
+                // SwiftUI has not laid out the strip at the instant the reveal is
+                // dispatched, and the accessibility tree is built from the layout — the
+                // same "read back the previous layout" hazard that sized the panel wrong.
+                try? await Task.sleep(for: .seconds(1))
+                Self.dumpAccessibilityTree()
+            }
             if CommandLine.arguments.contains("--test-activate") {
                 await Self.testLevelTwoActivation(environment)
             }
@@ -368,6 +375,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// terminal's grants rather than the app's. Anything permission-dependent has to be
     /// measured in here, which is why this runs on every launch and not only in demo
     /// mode.
+    /// Walks the overlay's own accessibility tree and writes what a screen reader would
+    /// find there.
+    ///
+    /// The alternative is switching VoiceOver on, which starts talking over whatever the
+    /// machine is doing and cannot run in CI. This asks the same question of the same
+    /// API: SwiftUI's accessibility modifiers are only a promise until something reads
+    /// them back out, and a tile whose label never reached the AX layer looks identical
+    /// in the source to one that did.
+    private static func dumpAccessibilityTree() {
+        var report = "overlay accessibility tree, as a screen reader would walk it\n\n"
+        var labelled = 0
+
+        func walk(_ element: AXUIElement, depth: Int) {
+            guard depth < 12 else { return }
+            func string(_ attribute: String) -> String? {
+                var value: CFTypeRef?
+                guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success
+                else { return nil }
+                return value as? String
+            }
+            let role = string(kAXRoleAttribute) ?? "?"
+            let label = string(kAXDescriptionAttribute) ?? string(kAXTitleAttribute) ?? ""
+            if !label.isEmpty {
+                labelled += 1
+                report += String(repeating: "  ", count: depth) + "\(role)  \(label)\n"
+            }
+
+            var children: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &children) == .success,
+                  let list = children as? [AXUIElement] else { return }
+            for child in list { walk(child, depth: depth + 1) }
+        }
+
+        walk(AXUIElementCreateApplication(getpid()), depth: 0)
+        report += "\n\(labelled) labelled elements\n"
+        try? report.write(toFile: "/tmp/tabswitcher-a11y.txt", atomically: true, encoding: .utf8)
+    }
+
     private static func writeStatusReport(_ environment: AppEnvironment) async {
         let snapshot = await environment.store.current
         let timings = await environment.store.timings

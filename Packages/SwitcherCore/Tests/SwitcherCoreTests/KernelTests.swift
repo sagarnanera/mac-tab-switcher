@@ -300,3 +300,57 @@ struct AppearanceRulesTests {
         #expect(one == AppearanceRules(increasesContrast: true))
     }
 }
+
+@Suite("TileNarration")
+struct TileNarrationTests {
+    private let safari = Fixture.app(1, "Safari")
+
+    @Test("the app name leads, because a title alone does not say where Return lands you")
+    func basic() {
+        let label = TileNarration.label(
+            window: Fixture.window(1, pid: 1, title: "Apple"),
+            app: safari, index: 0, total: 3
+        )
+        #expect(label == "Safari, Apple, 1 of 3")
+    }
+
+    @Test("an untitled window is still distinguishable from its siblings")
+    func untitled() {
+        let label = TileNarration.label(
+            window: Fixture.window(1, pid: 1, title: "   "),
+            app: safari, index: 2, total: 4
+        )
+        #expect(label == "Safari, untitled window, 3 of 4")
+    }
+
+    @Test("state badges are icons, so they have to be spoken")
+    func flags() {
+        let label = TileNarration.label(
+            window: Fixture.window(1, pid: 1, title: "Notes", flags: [.minimized, .otherSpace]),
+            app: safari, index: 0, total: 1
+        )
+        #expect(label.contains("minimized"))
+        #expect(label.contains("on another desktop"))
+        // A row of one does not need its position read out every time.
+        #expect(!label.contains("1 of 1"))
+    }
+
+    @Test("the window count is announced only when stepping in would reveal something")
+    func windowCount() {
+        let many = TileNarration.label(window: Fixture.window(1, pid: 1, title: "a"),
+                                       app: safari, index: 0, total: 2, windowCount: 5)
+        #expect(many.contains("5 windows"))
+        let one = TileNarration.label(window: Fixture.window(1, pid: 1, title: "a"),
+                                      app: safari, index: 0, total: 2, windowCount: 1)
+        #expect(!one.contains("window"))
+    }
+
+    @Test("the summary says how to leave, so the panel is not mistaken for a freeze")
+    func summary() {
+        let text = TileNarration.summary(appCount: 3, windowCount: 7)
+        #expect(text.contains("7 windows across 3 apps"))
+        #expect(text.contains("Escape"))
+        #expect(TileNarration.summary(appCount: 1, windowCount: 1).contains("1 window across 1 app"))
+        #expect(TileNarration.summary(appCount: 0, windowCount: 0).contains("no windows"))
+    }
+}

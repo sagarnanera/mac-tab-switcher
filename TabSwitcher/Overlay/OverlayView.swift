@@ -64,7 +64,8 @@ struct OverlayView: View {
                         icon: model.icon(for: group.app),
                         size: layout.tileSize,
                         isSelected: isAppSelected(index),
-                        windowCount: group.windows.count
+                        windowCount: group.windows.count,
+                        position: (index, state.groups.count)
                     )
                     dwellBar(visible: isAppSelected(index) && model.showsDwellProgress)
                         .frame(width: layout.tileSize.width)
@@ -78,6 +79,10 @@ struct OverlayView: View {
                 .onTapGesture { onInput(.confirm) }
             }
         }
+        // Without a container the two rows are flat siblings in the accessibility tree,
+        // and nothing distinguishes the app row from the windows of one app beneath it.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Apps")
     }
 
     /// The reveal is startling the first few times unless something signals it is
@@ -117,7 +122,8 @@ struct OverlayView: View {
                         size: layout.tileSize,
                         isSelected: isWindowSelected(index),
                         windowCount: nil,
-                        shortcutDigit: index < 9 ? index + 1 : nil
+                        shortcutDigit: index < 9 ? index + 1 : nil,
+                        position: (index, group.windows.count)
                     )
                     .contentShape(.rect)
                     .onHover { inside in
@@ -131,6 +137,8 @@ struct OverlayView: View {
         .frame(height: layout.tileSize.height + 30)
         .padding(.top, 12)
         .transition(appearance.stripTransition)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Windows of \(group.app.name)")
     }
 
     // MARK: - Filtering
@@ -158,7 +166,8 @@ struct OverlayView: View {
                                     icon: model.icon(for: result.app),
                                     size: layout.tileSize,
                                     isSelected: isFlatSelected(index),
-                                    windowCount: nil
+                                    windowCount: nil,
+                                    position: (index, min(state.results.count, 24))
                                 )
                                 Text(result.app.name)
                                     .font(.caption2)
