@@ -464,7 +464,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         report += "bundle:  \(Bundle.main.bundlePath)\n"
         report += "initial: \(status())\n"
 
-        let wasEnabled = LaunchAtLogin.isEnabled
+        // Captured as a status, not as `isEnabled`. `requiresApproval` means macOS holds
+        // the registration and is waiting on the user, so it is registered as far as
+        // restoring is concerned — reading only `isEnabled` would treat it as off and
+        // leave this test having quietly cancelled a pending login item.
+        let initialStatus = SMAppService.mainApp.status
+        let wasRegistered = initialStatus == .enabled || initialStatus == .requiresApproval
 
         if let error = LaunchAtLogin.set(true) {
             report += "register FAILED: \(error)\n"
@@ -479,8 +484,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             report += "after unregister: \(status())  isEnabled=\(LaunchAtLogin.isEnabled)\n"
         }
 
-        // Left as it was found: a diagnostic that changes a user setting is a bug.
-        if wasEnabled { _ = LaunchAtLogin.set(true) }
+        // Left as it was found: a diagnostic that changes a user setting is a bug — and
+        // one that fails to put it back and says nothing is a worse one, so the error is
+        // reported rather than discarded.
+        if wasRegistered, let error = LaunchAtLogin.set(true) {
+            report += "RESTORE FAILED: \(error)\n"
+            report += "  the login item was registered before this ran and is not now\n"
+        }
         report += "restored to: \(status())\n"
 
         try? report.write(toFile: "/tmp/tabswitcher-loginitem.txt", atomically: true, encoding: .utf8)

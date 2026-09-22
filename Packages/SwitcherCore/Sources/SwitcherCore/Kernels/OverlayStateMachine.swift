@@ -223,7 +223,20 @@ public struct OverlayState: Sendable, Equatable {
         }
         // Keep the selection pinned to the same window across a refresh. A list that
         // re-sorts under the user mid-switch is worse than a slightly stale one.
-        if let previouslySelected, let found = locate(previouslySelected) {
+        //
+        // Filtering is handled separately because it has its own, flat index space and
+        // `locate` only speaks the grouped one. Letting it answer here left a `.grouped`
+        // selection in place while the filter view was still on screen: nothing appeared
+        // highlighted, and the next keystroke resumed from the top of the list, because
+        // `moveFlat` treats a non-flat selection as index 0.
+        if isFiltering {
+            if let previouslySelected,
+               let index = results.firstIndex(where: { $0.window.id == previouslySelected }) {
+                selection = .flat(index)
+            } else {
+                selection = clamped(selection)
+            }
+        } else if let previouslySelected, let found = locate(previouslySelected) {
             selection = found
         } else {
             selection = clamped(selection)

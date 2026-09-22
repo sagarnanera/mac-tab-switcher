@@ -427,3 +427,67 @@ struct RefreshLevelTests {
         #expect(state.selection == .grouped(app: 1, window: 0))
     }
 }
+
+@Suite("OverlayStateMachine — refresh while filtering")
+struct FilterRefreshTests {
+
+    private func snapshot(order: [String]) -> WindowSnapshot {
+        let ids: [String: CGWindowID] = ["alpha": 201, "banana": 202, "gamma": 203]
+        let code = AppGroup(
+            app: Fixture.app(2, "Code"),
+            windows: order.map { Fixture.window(ids[$0]!, pid: 2, title: $0) }
+        )
+        return WindowSnapshot(
+            groups: [Fixture.group("Finder", pid: 1, titles: ["Downloads"]), code],
+            capturedAt: .now
+        )
+    }
+
+    /// Filtering has its own flat index space. A refresh used to rewrite the selection
+    /// through `locate`, which only speaks the grouped one, so the user was left in
+    /// `.flat` rendering with a `.grouped` selection: no result highlighted, and the next
+    /// keystroke resuming from the top of the list.
+    @Test("the highlighted result survives a refresh")
+    func keepsFlatSelection() {
+        var state = OverlayState()
+        _ = state.apply(.snapshotChanged(snapshot(order: ["alpha", "banana", "gamma"])))
+        _ = state.apply(.summon)
+        _ = state.apply(.typed("a"))
+        _ = state.apply(.nextApp)                       // move off the first result
+        guard case .flat(let before) = state.selection else {
+            Issue.record("expected a flat selection while filtering")
+            return
+        }
+        let chosen = state.selectedWindow?.id
+        #expect(chosen != nil)
+
+        _ = state.apply(.snapshotChanged(snapshot(order: ["gamma", "alpha", "banana"])))
+
+        #expect(state.isFiltering)
+        if case .flat = state.selection {} else {
+            Issue.record("a refresh dropped out of the flat selection: \(state.selection)")
+        }
+        // The same window, wherever the reorder moved it.
+        #expect(state.selectedWindow?.id == chosen)
+        _ = before
+    }
+
+    @Test("a result that disappears falls back inside the flat list, not into the groups")
+    func clampsWhenResultVanishes() {
+        var state = OverlayState()
+        _ = state.apply(.snapshotChanged(snapshot(order: ["alpha", "banana", "gamma"])))
+        _ = state.apply(.summon)
+        _ = state.apply(.typed("a"))
+        _ = state.apply(.nextApp)
+
+        // Code quits; only Finder's "Downloads" still matches.
+        _ = state.apply(.snapshotChanged(WindowSnapshot(
+            groups: [Fixture.group("Finder", pid: 1, titles: ["Downloads"])],
+            capturedAt: .now
+        )))
+
+        if case .flat = state.selection {} else {
+            Issue.record("expected to stay flat while filtering, got \(state.selection)")
+        }
+    }
+}
