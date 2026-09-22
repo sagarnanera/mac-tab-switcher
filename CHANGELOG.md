@@ -13,6 +13,8 @@ Versions follow [semantic versioning](https://semver.org/).
 - The window strip sometimes opened and closed too fast to see, or stepped in at the
   second or third tile. A stationary mouse pointer was enough to cause both.
 - Preview sizes above about 300pt overflowed the settings pane and distorted the sample.
+- The settings sidebar jerked when collapsed or reopened. It no longer collapses, which
+  is also how System Settings behaves.
 
 ## [0.1.0] — unreleased
 

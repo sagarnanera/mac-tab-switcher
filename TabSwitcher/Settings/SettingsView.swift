@@ -18,6 +18,8 @@ struct SettingsView: View {
     let onChange: () -> Void
 
     @State private var pane: Pane?
+    /// Pinned open. See the sidebar's `toolbar(removing:)` below for why.
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     enum Pane: String, CaseIterable, Identifiable {
         case general, shortcut, appearance, permissions
@@ -46,11 +48,24 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             List(Pane.allCases, selection: $pane) { pane in
                 Label(pane.title, systemImage: pane.symbol).tag(pane)
             }
             .navigationSplitViewColumnWidth(min: 160, ideal: 172, max: 200)
+            // The sidebar does not collapse, which is also what System Settings does.
+            //
+            // Collapsing it in a fixed-size window is not a small visual flaw, it is
+            // unresolvable. The detail column expands to the full width the instant the
+            // toggle is hit, while the sidebar is still animating out, so the content
+            // slides underneath it and snaps. Making the window resizable trades that
+            // for something worse: collapse cannot shrink past the minimum width, while
+            // reopening still adds the sidebar's width back, so the window grows by
+            // ~173pt on every cycle.
+            //
+            // There is nothing to gain either way. Four fixed panes in a 720pt window do
+            // not benefit from hiding their own navigation.
+            .toolbar(removing: .sidebarToggle)
         } detail: {
             Group {
                 switch pane ?? .general {
