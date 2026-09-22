@@ -22,9 +22,18 @@ enum LaunchAtLogin {
                 if SMAppService.mainApp.status != .enabled {
                     try SMAppService.mainApp.register()
                 }
-            } else if SMAppService.mainApp.status != .notRegistered &&
-                        SMAppService.mainApp.status != .notFound {
-                try SMAppService.mainApp.unregister()
+            } else {
+                // `requiresApproval` must unregister too, which the original `== .enabled`
+                // guard missed: macOS holds the registration and is only waiting on the
+                // user, so switching the setting off while it is pending left the
+                // registration in place while the toggle read as off. Stated as the two
+                // cases that mean "there is nothing registered" rather than as a
+                // double negative, so a future status is handled by unregistering, which
+                // is the safe direction when the caller has asked for off.
+                switch SMAppService.mainApp.status {
+                case .notRegistered, .notFound: break
+                default: try SMAppService.mainApp.unregister()
+                }
             }
             return nil
         } catch {

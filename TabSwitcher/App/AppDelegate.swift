@@ -491,8 +491,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             report += "RESTORE FAILED: \(error)\n"
             report += "  the login item was registered before this ran and is not now\n"
         }
+        // `notFound` and `notRegistered` both mean "no login item"; they differ only in
+        // whether macOS has ever held a record for this bundle. A first run reports
+        // `notFound` and ends at `notRegistered`, which is a restored state and not a
+        // failed one — comparing the raw values would cry mismatch on exactly the fresh
+        // install this flag exists to check.
+        func isRegistered(_ value: SMAppService.Status) -> Bool {
+            value != .notRegistered && value != .notFound
+        }
         let finalStatus = SMAppService.mainApp.status
-        if finalStatus == initialStatus {
+        if isRegistered(finalStatus) == isRegistered(initialStatus) {
             report += "restored to: \(status(finalStatus))\n"
         } else {
             report += "RESTORE MISMATCH: expected \(status(initialStatus)), got \(status(finalStatus))\n"
