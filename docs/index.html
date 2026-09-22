@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TabSwitcher</title>
+<meta name="description" content="A macOS window switcher with previews. ⌥Tab cycles apps; rest on one to reach its individual windows.">
+<style>
+:root {
+  --bg: #fbfbfd; --fg: #1d1d1f; --muted: #6e6e73; --line: #d8d8dc;
+  --card: #ffffff; --accent: #0066cc; --code-bg: #f2f2f5; --warn-bg: #fff8e6; --warn-line: #e8c96a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101013; --fg: #f2f2f5; --muted: #9a9aa0; --line: #2c2c31;
+    --card: #17171b; --accent: #4da3ff; --code-bg: #1c1c21; --warn-bg: #241f10; --warn-line: #5c4a1a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101013; --fg: #f2f2f5; --muted: #9a9aa0; --line: #2c2c31;
+  --card: #17171b; --accent: #4da3ff; --code-bg: #1c1c21; --warn-bg: #241f10; --warn-line: #5c4a1a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 780px; margin: 0 auto; padding: 0 16px 96px; }
+header { padding: 88px 0 56px; text-align: center; }
+h1 { font-size: 44px; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 12px; }
+.tagline { font-size: 21px; color: var(--muted); margin: 0 auto; max-width: 30em; }
+h2 { font-size: 26px; letter-spacing: -0.01em; margin: 56px 0 16px; }
+h3 { font-size: 18px; margin: 28px 0 8px; }
+p { margin: 0 0 16px; }
+a { color: var(--accent); }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+code { background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
+pre {
+  background: var(--code-bg); padding: 16px; border-radius: 10px;
+  overflow-x: auto; margin: 0 0 8px; border: 1px solid var(--line);
+}
+pre code { background: none; padding: 0; }
+kbd {
+  background: var(--card); border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 6px; padding: 2px 7px; font-size: 14px; font-family: inherit;
+  white-space: nowrap;
+}
+table { width: 100%; border-collapse: collapse; margin: 0 0 16px; }
+td { padding: 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+td:first-child { width: 42%; padding-right: 20px; }
+.note {
+  background: var(--warn-bg); border: 1px solid var(--warn-line);
+  border-radius: 10px; padding: 16px 18px; margin: 0 0 20px;
+}
+.note p:last-child { margin: 0; }
+.muted { color: var(--muted); font-size: 15px; }
+footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; }
+@media (max-width: 560px) {
+  header { padding: 56px 0 36px; }
+  h1 { font-size: 34px; }
+  .tagline { font-size: 18px; }
+  td { display: block; border: none; padding: 4px 0; }
+  td:first-child { width: auto; font-weight: 600; }
+  tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>TabSwitcher</h1>
+  <p class="tagline">A window switcher for macOS, with previews.
+  <kbd>⌥</kbd><kbd>Tab</kbd> cycles apps — rest on one and its windows appear beneath.</p>
+</header>
+
+<p><kbd>⌘</kbd><kbd>Tab</kbd> shows icons, not windows. With five VS Code windows open it
+offers one entry and no way to say which. TabSwitcher shows what each window actually
+contains, and reaches individual windows of the same app without leaving the keyboard.</p>
+
+<h2>The keys</h2>
+<table>
+  <tr><td><kbd>⌥</kbd><kbd>Tab</kbd></td><td>next app</td></tr>
+  <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>Tab</kbd></td><td>previous app</td></tr>
+  <tr><td>hold on an app with several windows</td><td>after a moment, its windows appear below</td></tr>
+  <tr><td><kbd>⌥</kbd><kbd>Tab</kbd> again, once they have</td><td>steps through <em>those</em> windows</td></tr>
+  <tr><td><kbd>⌥</kbd><kbd>1</kbd>–<kbd>9</kbd></td><td>jump straight to a window</td></tr>
+  <tr><td>type anything</td><td>filter every window by name</td></tr>
+  <tr><td>release <kbd>⌥</kbd></td><td>switch</td></tr>
+</table>
+<p class="muted">The pause before windows appear is configurable, including “never” and
+“immediately”.</p>
+
+<h2>Install</h2>
+
+<div class="note">
+  <p><strong>This app is not notarized.</strong> It has no paid Apple Developer ID, which
+  means a browser download is blocked outright by Gatekeeper, and Homebrew is not
+  available.</p>
+  <p>The script below avoids that legitimately rather than by a trick: the quarantine flag
+  is applied by the <em>downloading application</em>, and <code>curl</code> does not apply
+  one. Nothing is bypassed.</p>
+</div>
+
+<h3>Read it first, then run it</h3>
+<p>This is the form to prefer.</p>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh -o install.sh
+less install.sh
+bash install.sh</code></pre>
+
+<h3>Or, once you have read it</h3>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh | bash</code></pre>
+<p class="muted">Piping a remote script into a shell runs whatever that URL serves at that
+moment. Homebrew and rustup make it normal, not safe — and it is worth being deliberate
+about here, because this app asks for permission to read your screen.</p>
+
+<h3>Or build it</h3>
+<pre><code>git clone https://github.com/sagarnanera/tab-switcher
+cd tab-switcher
+bash Scripts/setup.sh
+bash Scripts/build.sh</code></pre>
+
+<h2>The two permissions</h2>
+<p><strong>Accessibility</strong> — to raise a window. macOS has no public way to bring one
+specific window of an app forward; it goes through the accessibility API.</p>
+<p><strong>Screen Recording</strong> — for the previews. macOS treats reading another app's
+window pixels as screen recording, whatever the purpose. Without it you get app icons
+instead of thumbnails.</p>
+<p>Neither sends anything anywhere. There is no network code in this app beyond checking
+for its own updates, and that is off until you turn it on.
+<a href="https://github.com/sagarnanera/tab-switcher/blob/main/docs/PERMISSIONS.md">What degrades without each →</a></p>
+
+<h2>Honest limitations</h2>
+<p><strong>It does not switch browser tabs.</strong> A background tab has no capturable
+pixels by any mechanism — not ScreenCaptureKit, not accessibility, not even a browser
+extension.</p>
+<p><strong>It uses seven undocumented macOS calls</strong>, each resolved at runtime with a
+public fallback, to raise specific windows and capture minimized ones. If one disappears in
+a macOS update the app loses that capability and keeps running.
+<a href="https://github.com/sagarnanera/tab-switcher/blob/main/docs/PRIVATE_APIS.md">Every one of them, listed →</a></p>
+
+<footer>
+  <p><a href="https://github.com/sagarnanera/tab-switcher">Source</a> ·
+     <a href="https://github.com/sagarnanera/tab-switcher/blob/main/CHANGELOG.md">Changelog</a> ·
+     <a href="https://github.com/sagarnanera/tab-switcher/blob/main/SECURITY.md">Security</a> ·
+     <a href="https://github.com/sagarnanera/tab-switcher/issues">Issues</a></p>
+  <p>MIT licensed.</p>
+</footer>
+
+</div>
+</body>
+</html>

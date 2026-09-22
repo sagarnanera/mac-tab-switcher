@@ -28,6 +28,9 @@ First release.
   less reliable path.
 - Honours Reduce Transparency, Increase Contrast and Reduce Motion.
 - Screen reader labels on every tile.
+- Auto-updates via Sparkle, off until you turn them on.
+- A check of the app's own code signature on launch, because a damaged bundle loses its
+  permissions silently and otherwise just looks broken.
 
 ### Known limitations
 

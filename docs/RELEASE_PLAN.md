@@ -40,6 +40,25 @@ Three consequences:
    (sparkle-project, and imputnet/helium-macos#339), and the symptom is exactly the one
    above. Better to say so than to let the user conclude the app stopped working.
 
+## What Sparkle cost, that was not visible when it was chosen
+
+Self-signing and Sparkle together **force
+`com.apple.security.cs.disable-library-validation`**. Library validation restricts a
+process to loading code signed by the same Team ID; a self-signed certificate has no Team
+ID, so the check rejects the app's own embedded Sparkle framework, signed by the app's own
+identity. The app does not launch at all without the entitlement — `dyld` refuses with
+"different Team IDs".
+
+There is no third option. Disabling the hardened runtime instead is strictly worse, and
+Sparkle's own documentation says the same thing: without an Apple Developer ID, library
+validation and Sparkle cannot both be on.
+
+What it costs: a library signed by anyone, or by nobody, can be loaded into a process that
+holds Screen Recording and Accessibility. The rest of the hardened runtime stays on.
+
+This is the clearest single thing the $99 buys, and the entitlement should be deleted the
+day there is a Developer ID.
+
 ## Not doing
 
 **Homebrew.** Casks have required notarization since September 2026. Closed until there is

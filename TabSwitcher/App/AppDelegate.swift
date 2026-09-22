@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var welcome: WelcomeWindowController?
+    private let updates = UpdateController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // A switcher has no business in the Dock or the app switcher it replaces.
@@ -61,6 +62,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             .flatMap(WelcomeModel.Step.init(rawValue:))
         welcome?.show(startingAt: requested)
     }
+
+    /// Computed once. `codesign --verify --deep` on a 5MB bundle is not free, and the
+    /// answer cannot change while the app is running — a bundle replaced underneath a
+    /// live process is a different problem than this one.
+    private lazy var bundleIntegrity: BundleIntegrity.Result = {
+        #if DEBUG
+        // A debug build is re-signed on every build and lives in DerivedData, where a
+        // stale manifest means nothing.
+        return .valid
+        #else
+        return BundleIntegrity.verify()
+        #endif
+    }()
 
     private func launch() {
         let environment = AppEnvironment()
@@ -171,7 +185,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if AXPermission.isTrusted(), CGPreflightScreenCaptureAccess() {
             menu.addItem(withTitle: "All permissions granted", action: nil, keyEquivalent: "")
         }
+        if case .broken = bundleIntegrity {
+            // Ahead of everything else: while this is true, nothing below it works
+            // properly and every other entry is a distraction.
+            menu.addItem(withTitle: "Damaged install — permissions will not work",
+                         action: #selector(explainBrokenBundle), keyEquivalent: "")
+        }
         menu.addItem(.separator())
+        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
         menu.addItem(withTitle: "Setup guide…", action: #selector(showWelcome), keyEquivalent: "")
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(.separator())
@@ -316,6 +337,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.setActivationPolicy(.accessory)
     }
 
+    @objc private func checkForUpdates() {
+        updates.checkForUpdates()
+    }
+
+    /// Says what broke and what to do, rather than leaving the user to conclude the app
+    /// stopped finding windows for no reason. Re-signing in place is deliberately not
+    /// offered: an app that repairs its own signature is indistinguishable from one
+    /// being tampered with.
+    @objc private func explainBrokenBundle() {
+        guard case .broken(let detail) = bundleIntegrity else { return }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "This copy of TabSwitcher is damaged"
+        alert.informativeText = """
+            Its code signature no longer verifies. macOS ties Accessibility and Screen \
+            Recording to that signature, so those permissions will be refused even though \
+            System Settings still shows them as granted — the app will appear to have \
+            stopped working for no reason.
+
+            Reinstalling fixes it. Your settings are kept.
+
+            \(detail)
+            """
+        alert.addButton(withTitle: "Copy Details")
+        alert.addButton(withTitle: "Close")
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(detail, forType: .string)
+        }
+        NSApp.setActivationPolicy(.accessory)
+    }
+
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
     }
@@ -350,7 +406,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         window.title = "TabSwitcher Settings"
         window.contentView = NSHostingView(
-            rootView: SettingsView(preferences: environment.preferences) { [weak environment] in
+            rootView: SettingsView(preferences: environment.preferences, updates: updates) { [weak environment] in
                 environment?.applyPreferences()
             }
         )

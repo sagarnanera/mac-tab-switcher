@@ -11,6 +11,9 @@ import SwitcherCore
 /// idiom for something this ordinary.
 struct SettingsView: View {
     @Bindable var preferences: Preferences
+    /// Passed in rather than reached for globally so a settings window can be rendered in
+    /// a preview or a demo without starting a real updater.
+    let updates: UpdateController
     let onChange: () -> Void
 
     @State private var pane: Pane? = .general
@@ -50,7 +53,7 @@ struct SettingsView: View {
         } detail: {
             Group {
                 switch pane ?? .general {
-                case .general: GeneralPane(preferences: preferences)
+                case .general: GeneralPane(preferences: preferences, updates: updates)
                 case .shortcut: ShortcutPane(preferences: preferences)
                 case .appearance: AppearancePane(preferences: preferences)
                 case .permissions: PermissionsPane()
@@ -75,7 +78,12 @@ struct SettingsView: View {
 
 private struct GeneralPane: View {
     @Bindable var preferences: Preferences
+    let updates: UpdateController
     @State private var confirmingReset = false
+    /// Mirrors Sparkle's own setting rather than duplicating it into `Preferences`:
+    /// Sparkle owns this value, writes it itself when it asks on second launch, and two
+    /// stores for one switch is how they end up disagreeing.
+    @State private var checksAutomatically = false
 
     var body: some View {
         Form {
@@ -93,6 +101,33 @@ private struct GeneralPane: View {
                     Label(error, systemImage: "xmark.circle").foregroundStyle(.red).font(.callout)
                 }
             }
+
+            Section("Updates") {
+                Toggle("Check for updates automatically", isOn: $checksAutomatically)
+                    .onChange(of: checksAutomatically) { _, value in
+                        updates.checksAutomatically = value
+                    }
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let last = updates.lastCheck {
+                            Text("Last checked \(last.formatted(date: .abbreviated, time: .shortened))")
+                                .settingsHelp()
+                        } else {
+                            Text("Not checked yet").settingsHelp()
+                        }
+                    }
+                    Spacer()
+                    Button("Check Now") { updates.checkForUpdates() }
+                        .disabled(!updates.canCheck)
+                }
+                // Said here because it is not obvious and it matters: this app is not
+                // notarized, so Apple has vouched for nothing. The signature on an update
+                // is the only thing that does.
+                Text("Updates are verified against a signing key built into this app. "
+                     + "They are downloaded from the project's GitHub releases.")
+                    .settingsHelp()
+            }
+            .onAppear { checksAutomatically = updates.checksAutomatically }
 
             Section("What counts as a window") {
                 Toggle("List Finder and Terminal tabs separately", isOn: $preferences.breakOutNativeTabs)

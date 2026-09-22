@@ -46,6 +46,10 @@
 			isa = PBXBuildFile;
 			productRef = A100000000000000000030 /* SwitcherCore */;
 		};
+		A100000000000000000021 /* Sparkle in Frameworks */ = {
+			isa = PBXBuildFile;
+			productRef = A100000000000000000032 /* Sparkle */;
+		};
 /* End PBXBuildFile section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +58,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A100000000000000000020 /* SwitcherCore in Frameworks */,
+				A100000000000000000021 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +130,7 @@
 			name = TabSwitcher;
 			packageProductDependencies = (
 				A100000000000000000030 /* SwitcherCore */,
+				A100000000000000000032 /* Sparkle */,
 			);
 			productName = TabSwitcher;
 			productReference = A100000000000000000010 /* TabSwitcher.app */;
@@ -156,6 +162,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A100000000000000000031 /* XCLocalSwiftPackageReference "Packages/SwitcherCore" */,
+				A100000000000000000033 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A100000000000000000052 /* Products */;
@@ -174,10 +181,26 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		A100000000000000000033 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		A100000000000000000030 /* SwitcherCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SwitcherCore;
+		};
+		A100000000000000000032 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A100000000000000000033 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 
