@@ -233,3 +233,70 @@ struct ThumbKeyTests {
         #expect(key.hex.allSatisfy { $0.isHexDigit })
     }
 }
+
+@Suite("AppearanceRules")
+struct AppearanceRulesTests {
+
+    @Test("defaults keep the chrome quiet")
+    func defaults() {
+        let rules = AppearanceRules.default
+        #expect(rules.panelBorderOpacity == 0.10)
+        #expect(rules.unselectedBorderOpacity == 0)
+        #expect(rules.stripRevealDuration == 0.12)
+    }
+
+    @Test("an opaque panel gets a stronger edge, because it lost the one translucency gave it")
+    func reducedTransparency() {
+        let rules = AppearanceRules(reducesTransparency: true)
+        #expect(rules.panelBorderOpacity > AppearanceRules.default.panelBorderOpacity)
+        // The fill is not this type's business: AppKit already opaques the material.
+        // Only the border is ours, and the motion and selection rules must not move.
+        #expect(rules.stripRevealDuration == AppearanceRules.default.stripRevealDuration)
+        #expect(rules.selectionHaloOpacity == AppearanceRules.default.selectionHaloOpacity)
+    }
+
+    @Test("increase contrast wins over reduce transparency where both apply")
+    func contrastWins() {
+        let both = AppearanceRules(reducesTransparency: true, increasesContrast: true)
+        let transparencyOnly = AppearanceRules(reducesTransparency: true)
+        #expect(both.panelBorderOpacity > transparencyOnly.panelBorderOpacity)
+        #expect(both.panelBorderOpacity == AppearanceRules(increasesContrast: true).panelBorderOpacity)
+    }
+
+    @Test("increase contrast thickens the selection and gives unselected tiles an edge")
+    func increasedContrast() {
+        let rules = AppearanceRules(increasesContrast: true)
+        #expect(rules.selectionHaloOpacity == 1)
+        #expect(rules.selectionOuterWidth > AppearanceRules.default.selectionOuterWidth)
+        #expect(rules.unselectedBorderOpacity > 0)
+        // The halo must stay wider than the ring it sits behind, or it stops being a halo.
+        #expect(rules.selectionOuterWidth > rules.selectionInnerWidth)
+    }
+
+    @Test("the halo is always wider than the ring, at every setting")
+    func haloAlwaysReadable() {
+        for contrast in [false, true] {
+            let rules = AppearanceRules(increasesContrast: contrast)
+            #expect(rules.selectionOuterWidth > rules.selectionInnerWidth)
+            // Never zero: the two-tone ring is a correctness fix, not a concession.
+            #expect(rules.selectionHaloOpacity > 0)
+        }
+    }
+
+    @Test("reduce motion removes the reveal rather than slowing it")
+    func reducedMotion() {
+        #expect(AppearanceRules(reducesMotion: true).stripRevealDuration == nil)
+    }
+
+    @Test("the demo flag reaches branches the default machine cannot")
+    func commandLine() {
+        #expect(AppearanceRules.fromCommandLine(["TabSwitcher"]) == nil)
+        #expect(AppearanceRules.fromCommandLine(["--demo-a11y"]) == AppearanceRules())
+        let all = AppearanceRules.fromCommandLine(["--demo-a11y=contrast,transparency,motion"])
+        #expect(all == AppearanceRules(reducesTransparency: true,
+                                       increasesContrast: true,
+                                       reducesMotion: true))
+        let one = AppearanceRules.fromCommandLine(["--demo-a11y=contrast"])
+        #expect(one == AppearanceRules(increasesContrast: true))
+    }
+}

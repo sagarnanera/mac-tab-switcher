@@ -44,6 +44,7 @@ Where to look for a given task:
 |---|---|
 | Change what the cycle key does | `Kernels/OverlayStateMachine.swift` |
 | Change when windows are revealed | `Kernels/DwellPolicy.swift` |
+| Change how the overlay looks under an Accessibility setting | `Kernels/AppearanceRules.swift`, never the views |
 | A window is missing from the list | `Inventory/WindowFilter.swift`, then `WindowDiscovery.swift` |
 | A window is listed that should not be | `Inventory/CGWindowCandidate.swift` (layer/alpha/size gate) |
 | Previews missing or wrong | `Capture/WindowCapturer.swift`, `ThumbnailStore.swift` |
@@ -253,6 +254,15 @@ required notarization since September 2026. A `curl | bash` installer *does* wor
 quarantine flag is set by the downloading application and `curl` does not set it — which
 makes it the only viable install path while unsigned. See `docs/POLISH_PLAN.md`.
 
+**Liquid Glass.** The overlay uses `.regularMaterial`, not `.glassEffect`. Measured on
+macOS 27 in a real `.nonactivatingPanel` with our exact configuration: under Reduce
+Transparency glass does *not* become opaque — it keeps tinting from whatever is behind
+it, landing at `#2C1E21` where the material sits flat at `#393939`, and dropping
+secondary caption text to 3.69:1 against the material's 5.65:1. Below the 4.5:1 floor,
+and it varies with whichever window happens to be underneath. For a HUD that appears
+over arbitrary content that is a contrast bug, not a style choice. Re-test before
+adopting it; do not adopt it because a newer OS shipped.
+
 **Localization.** Strings are hardcoded. Extracting to a String Catalog is planned.
 
 ---
@@ -260,7 +270,7 @@ makes it the only viable install path while unsigned. See `docs/POLISH_PLAN.md`.
 ## 9. Verifying a change
 
 ```bash
-cd Packages/SwitcherCore && swift test     # 61 tests, no GUI needed
+cd Packages/SwitcherCore && swift test     # 68 tests, no GUI needed
 bash Scripts/build.sh                      # builds, signs, installs to ~/Applications
 bash Scripts/build.sh --run
 bash Scripts/quit.sh
@@ -274,6 +284,7 @@ Debug affordances, all on the built binary:
 | `--diagnose --audit` | every surface the Window Server reports and why each was kept or dropped |
 | `--demo` | summons the overlay without a keystroke — WindowServer refuses synthesised modifier keys, so it cannot be scripted |
 | `--demo --demo-strip` | as above, then expands a window strip |
+| `--demo-a11y=contrast,transparency,motion` | forces the Accessibility branches on, without touching the machine's own settings — every one of them is otherwise unreachable on a default Mac |
 | `--test-activate` | activates every non-frontmost window of a multi-window app and reports whether focus landed |
 | `--test-minimized` | minimizes a throwaway TextEdit window and proves pixels are still capturable |
 | `--settings`, `--welcome-step N` | open those windows directly |

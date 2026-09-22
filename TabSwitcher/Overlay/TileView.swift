@@ -16,6 +16,8 @@ struct TileView: View {
     /// and a secret.
     var shortcutDigit: Int? = nil
 
+    @Environment(\.overlayAppearance) private var appearance
+
     var body: some View {
         VStack(spacing: 6) {
             ZStack {
@@ -32,17 +34,37 @@ struct TileView: View {
                 badges
             }
             .frame(width: size.width, height: size.height)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 3)
-            )
+            .overlay(selectionRing)
 
             Text(window.title)
                 .font(.caption)
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .foregroundStyle(isSelected ? .primary : .secondary)
+                .foregroundStyle(isSelected ? AnyShapeStyle(.primary) : appearance.secondaryText)
                 .frame(width: size.width)
+        }
+    }
+
+    /// Two concentric rings, not one.
+    ///
+    /// The ring is drawn straight onto a window screenshot, which can be any colour at
+    /// all — a plain accent-coloured border disappears against a blue window for
+    /// everyone, not only against a colour-vision deficiency. The halo underneath is
+    /// near-black in dark appearance and near-white in light, so whichever of the two
+    /// rings loses contrast, the other one holds the edge.
+    @ViewBuilder
+    private var selectionRing: some View {
+        if isSelected {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(appearance.selectionHalo,
+                                  lineWidth: appearance.selectionOuterWidth)
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.accentColor, lineWidth: appearance.selectionInnerWidth)
+            }
+        } else if appearance.unselectedBorderOpacity > 0 {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(.primary.opacity(appearance.unselectedBorderOpacity), lineWidth: 1)
         }
     }
 

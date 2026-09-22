@@ -8,6 +8,16 @@ struct OverlayView: View {
     /// cannot drift out of step with the state machine's rules.
     let onInput: (OverlayInput) -> Void
 
+    /// Normally nil; `--demo-a11y` supplies one so the accessibility branches can be
+    /// inspected without changing the machine's own settings. Stored on the view rather
+    /// than injected around it, because the hosting controller is generic over this
+    /// exact type and widening it to `some View` costs more than it buys.
+    var appearanceOverride: OverlayAppearance? = OverlayAppearance.fromCommandLine()
+
+    @Environment(\.overlayAppearance) private var systemAppearance
+
+    private var appearance: OverlayAppearance { appearanceOverride ?? systemAppearance }
+
     private var state: OverlayState { model.state }
 
     var body: some View {
@@ -25,7 +35,13 @@ struct OverlayView: View {
         }
         .padding(20)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .strokeBorder(appearance.panelBorder, lineWidth: appearance.panelBorderWidth)
+        )
         .fixedSize()
+        .animation(appearance.stripReveal, value: state.showsStrip)
+        .environment(\.overlayAppearanceOverride, appearanceOverride)
     }
 
     // MARK: - App row
@@ -68,7 +84,7 @@ struct OverlayView: View {
     /// coming. This bar is how the gesture is taught.
     private func dwellBar(visible: Bool) -> some View {
         Capsule()
-            .fill(.tertiary)
+            .fill(appearance.dwellTrack)
             .frame(height: 3)
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
@@ -114,7 +130,7 @@ struct OverlayView: View {
         }
         .frame(height: layout.tileSize.height + 30)
         .padding(.top, 12)
-        .transition(.opacity)
+        .transition(appearance.stripTransition)
     }
 
     // MARK: - Filtering
@@ -125,11 +141,11 @@ struct OverlayView: View {
         )
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                Image(systemName: "magnifyingglass").foregroundStyle(appearance.secondaryText)
                 Text(state.filter).font(.title3)
             }
             if state.results.isEmpty {
-                Text("No windows match").foregroundStyle(.secondary).padding(.vertical, 20)
+                Text("No windows match").foregroundStyle(appearance.secondaryText).padding(.vertical, 20)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
@@ -146,7 +162,7 @@ struct OverlayView: View {
                                 )
                                 Text(result.app.name)
                                     .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(appearance.tertiaryText)
                             }
                         }
                     }
@@ -167,12 +183,12 @@ struct OverlayView: View {
             Label("Secure input active — typing to filter is unavailable",
                   systemImage: "exclamationmark.lock")
                 .font(.caption2)
-                .foregroundStyle(.orange)
+                .foregroundStyle(appearance.warningText)
                 .padding(.top, 14)
         } else if model.showsKeyboardHints {
             hint
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(appearance.secondaryText)
                 .padding(.top, 14)
         }
     }
