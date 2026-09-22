@@ -28,9 +28,9 @@ First release.
   less reliable path.
 - Honours Reduce Transparency, Increase Contrast and Reduce Motion.
 - Screen reader labels on every tile.
-- Auto-updates via Sparkle, off until you turn them on.
 - A check of the app's own code signature on launch, because a damaged bundle loses its
   permissions silently and otherwise just looks broken.
+- No network code of any kind. No telemetry, no update check.
 
 ### Known limitations
 
@@ -38,6 +38,8 @@ First release.
   available. The install script is the path that works.
 - **No browser tab switching.** A background tab has no capturable pixels by any
   mechanism. See `ARCHITECTURE.md` §8.
+- **No auto-update.** Re-run the install command to update; it replaces the app in place
+  and keeps your permissions. There is no notification when a new version exists.
 - **VoiceOver does not follow the selection.** Tiles are labelled, but `Tab` moves the
   app's own selection without moving system focus, so a screen reader will not announce
   each step.

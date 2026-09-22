@@ -9,25 +9,12 @@
     <key>CFBundleName</key><string>$(PRODUCT_NAME)</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <!-- Both read from MARKETING_VERSION so the version cannot drift between the
-         project and the bundle. Sparkle compares CFBundleVersion, so it has to move
-         on every release. -->
+         project and the bundle. -->
     <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
     <key>CFBundleVersion</key><string>$(MARKETING_VERSION)</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSHighResolutionCapable</key><true/>
     <!-- Menu-bar agent: no Dock icon, no presence in the switcher it replaces. -->
     <key>LSUIElement</key><true/>
-
-    <!-- Sparkle. The public half of an EdDSA keypair whose private half lives in the
-         maintainer's login keychain. This key, not the code signature, is what an
-         update is trusted by: Apple notarization is absent here, so the EdDSA
-         signature is the only thing standing between the feed and arbitrary code
-         running on every install. -->
-    <key>SUPublicEDKey</key><string>plkNGtSDhbKBTXd5A3W+l+An97Is97URK1ofH11I0rM=</string>
-    <key>SUFeedURL</key><string>https://sagarnanera.github.io/tab-switcher/appcast.xml</string>
-    <!-- Asked on second launch rather than assumed, which is Sparkle's own default and
-         the only honest way to enable something that downloads and runs code. -->
-    <key>SUEnableAutomaticChecks</key><false/>
-    <key>SUScheduledCheckInterval</key><integer>86400</integer>
 </dict>
 </plist>

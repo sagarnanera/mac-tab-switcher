@@ -108,7 +108,8 @@ app still runs, using a fallback that is less reliable across Spaces.
 another app's window as screen recording, whatever the purpose. Without it you get app
 icons instead of thumbnails, and on some systems window titles disappear too.
 
-Neither permission sends anything anywhere. There is no network code in this app.
+Neither permission sends anything anywhere. There is no network code in this app at all —
+no telemetry, no crash reporting, no update check.
 
 `docs/PERMISSIONS.md` has the detail, including what degrades and how.
 
@@ -132,11 +133,10 @@ The private calls are resolved with `dlsym` at runtime, never linked. If one van
 app loses that capability and keeps running; it does not fail to launch. Run
 `TabSwitcher --diagnose` to see which paths are live.
 
-**How does it update itself?**
-Sparkle, and it is off until you turn it on — you are asked on second launch. Updates are
-verified by a signature built into the app. Since there is no notarization, that signature
-is the only thing vouching for an update, so it matters; `SECURITY.md` explains the trust
-model, including what the missing Developer ID costs.
+**How do I update it?**
+Re-run the install command. It replaces the app in place and your permissions survive — no
+need to uninstall first. There is no auto-updater and no update check, which also means
+nothing tells you a new version exists; watch the repo if you want to know.
 
 **How do I quit it?**
 Menu bar icon → Quit, or `bash Scripts/quit.sh`. It has no Dock icon by design.

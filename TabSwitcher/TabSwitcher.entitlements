@@ -6,21 +6,5 @@
          capture access this app is entirely built on, and the temporary exceptions
          that would allow it are not grantable for a utility like this. -->
     <key>com.apple.security.app-sandbox</key><false/>
-
-    <!-- Required to load Sparkle.framework, and a real weakening — say so plainly.
-         Library Validation restricts a process to loading code signed by the same Team
-         ID. A self-signed certificate has no Team ID, so the check rejects even our own
-         embedded framework, signed by our own identity. Sparkle documents this: without
-         an Apple Developer ID there is no configuration in which both Sparkle and
-         library validation work.
-
-         What it costs: with this on, a library signed by anyone — or by nobody — can be
-         loaded into a process that holds Screen Recording and Accessibility. The
-         hardened runtime's other protections stay on, and the app remains unsandboxed
-         either way, but this is strictly less safe than not having it.
-
-         Remove this the day a Developer ID exists. It is the single clearest thing the
-         $99 buys, and docs/RELEASE_PLAN.md says so. -->
-    <key>com.apple.security.cs.disable-library-validation</key><true/>
 </dict>
 </plist>

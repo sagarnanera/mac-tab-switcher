@@ -14,7 +14,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var welcome: WelcomeWindowController?
-    private let updates = UpdateController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // A switcher has no business in the Dock or the app switcher it replaces.
@@ -192,7 +191,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                          action: #selector(explainBrokenBundle), keyEquivalent: "")
         }
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
         menu.addItem(withTitle: "Setup guide…", action: #selector(showWelcome), keyEquivalent: "")
         menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         menu.addItem(.separator())
@@ -337,10 +335,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.setActivationPolicy(.accessory)
     }
 
-    @objc private func checkForUpdates() {
-        updates.checkForUpdates()
-    }
-
     /// Says what broke and what to do, rather than leaving the user to conclude the app
     /// stopped finding windows for no reason. Re-signing in place is deliberately not
     /// offered: an app that repairs its own signature is indistinguishable from one
@@ -406,7 +400,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         window.title = "TabSwitcher Settings"
         window.contentView = NSHostingView(
-            rootView: SettingsView(preferences: environment.preferences, updates: updates) { [weak environment] in
+            rootView: SettingsView(preferences: environment.preferences) { [weak environment] in
                 environment?.applyPreferences()
             }
         )

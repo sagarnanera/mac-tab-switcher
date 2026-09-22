@@ -8,11 +8,12 @@ import Foundation
 /// revoked permission and a denied one are indistinguishable from inside the app. The
 /// user sees a switcher that has silently stopped finding windows.
 ///
-/// Sparkle has a known failure mode that produces exactly this: an in-place update can
-/// leave the outer bundle's sealed-resource manifest stale relative to what is on disk,
-/// so the signature no longer verifies (sparkle-project, imputnet/helium-macos#339).
-/// Since we ship self-signed rather than notarized, there is no Gatekeeper check on
-/// launch that would catch it first.
+/// It survived the removal of Sparkle, which is what first motivated it. The failure does
+/// not need an auto-updater: an interrupted install, a partial download, a bundle copied
+/// with a tool that drops extended attributes, or an editor that writes into the app
+/// directory all produce it. And because this app is self-signed rather than notarized,
+/// there is no Gatekeeper check on launch that would catch it first — nothing else in the
+/// system will tell the user.
 ///
 /// Checked rather than assumed, and reported rather than repaired: re-signing in place is
 /// not something an app should do to itself.

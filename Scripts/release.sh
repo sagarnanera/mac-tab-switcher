@@ -54,45 +54,6 @@ ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
 
 ( cd "$DIST" && shasum -a 256 "$(basename "$ZIP")" > checksums.txt )
 
-# --- Sparkle ------------------------------------------------------------------------
-
-SIGN_UPDATE=$(find "$DERIVED/SourcePackages/artifacts" -name sign_update -type f 2>/dev/null | head -1)
-if [ -z "$SIGN_UPDATE" ]; then
-    echo "error: sign_update not found. Resolve packages first (build once in Xcode)." >&2
-    exit 1
-fi
-
-echo "==> Signing the update for Sparkle"
-# Fails loudly rather than emitting an unsigned entry. An appcast item whose signature
-# is missing is rejected by every client, so a silent skip here would ship a release
-# that cannot be installed and would look like a Sparkle bug months later.
-SIGNATURE=$("$SIGN_UPDATE" "$ZIP") || {
-    echo "error: sign_update failed. Is the EdDSA private key in this machine's keychain?" >&2
-    echo "       It was created by Sparkle's generate_keys and is NOT in the repository." >&2
-    exit 1
-}
-
-# sign_update prints BOTH sparkle:edSignature and length, ready to paste into the
-# enclosure. Adding our own length here produced a duplicate attribute and an appcast no
-# XML parser would accept — caught by validating the merged feed rather than by Sparkle
-# rejecting it in front of a user.
-PUBDATE=$(date -R 2>/dev/null || date "+%a, %d %b %Y %H:%M:%S %z")
-URL="https://github.com/$( sed -n 's/.*"github_repo": *"\([^"]*\)".*/\1/p' .release.json 2>/dev/null || echo sagarnanera/tab-switcher )/releases/download/v$VERSION/$(basename "$ZIP")"
-
-# Written to dist/ rather than straight into docs/appcast.xml: publishing an appcast
-# entry is what actually offers the update to every existing install, and that should be
-# a deliberate paste after the release exists, not a side effect of building one.
-cat > "$DIST/appcast-item.xml" <<XML
-        <item>
-            <title>$VERSION</title>
-            <pubDate>$PUBDATE</pubDate>
-            <sparkle:releaseNotesLink>https://github.com/sagarnanera/tab-switcher/blob/main/CHANGELOG.md</sparkle:releaseNotesLink>
-            <sparkle:version>$VERSION</sparkle:version>
-            <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="$URL" type="application/octet-stream" $SIGNATURE />
-        </item>
-XML
 
 echo ""
 echo "    $(cat "$DIST/checksums.txt")"
@@ -102,11 +63,6 @@ echo ""
 echo "    This build is NOT notarized. A browser download of it will be blocked by"
 echo "    Gatekeeper; Scripts/install.sh is the path that works."
 echo ""
-echo "    To publish, deliberately, in this order:"
-echo "      1. git tag v$VERSION && git push origin v$VERSION"
-echo "      2. gh release create v$VERSION '$ZIP' '$DIST/checksums.txt' --title v$VERSION"
-echo "      3. paste dist/appcast-item.xml as the FIRST <item> in docs/appcast.xml, commit, push"
-echo ""
-echo "    Step 3 last, and only once step 2 has succeeded. The appcast is what offers the"
-echo "    update to every existing install; publishing it before the download exists"
-echo "    points every user at a 404."
+echo "    To publish, deliberately:"
+echo "      git tag v$VERSION && git push origin v$VERSION"
+echo "      gh release create v$VERSION '\''$ZIP'\'' '\''$DIST/checksums.txt'\'' --title v$VERSION"
