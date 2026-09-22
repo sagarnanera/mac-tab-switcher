@@ -1,3 +1,4 @@
+import CoreGraphics
 import Testing
 @testable import SwitcherCore
 
@@ -360,5 +361,69 @@ struct RefreshTests {
         let effects = state.apply(.snapshotChanged(WindowSnapshot(groups: [], capturedAt: .now)))
         #expect(effects.contains(.hide))
         #expect(!state.isVisible)
+    }
+}
+
+@Suite("OverlayStateMachine — refresh must not change level")
+struct RefreshLevelTests {
+
+    /// Two apps; Code has three windows whose ORDER changes between snapshots while
+    /// each window keeps its identity.
+    ///
+    /// Ids are pinned to the title rather than to the position, because the ordinary
+    /// fixture derives them from the index — which would renumber every window on a
+    /// reorder and quietly test something else entirely.
+    private func snapshot(codeOrder: [String]) -> WindowSnapshot {
+        let ids: [String: CGWindowID] = ["a": 201, "b": 202, "c": 203]
+        let code = AppGroup(
+            app: Fixture.app(2, "Code"),
+            windows: codeOrder.map { Fixture.window(ids[$0]!, pid: 2, title: $0) }
+        )
+        return WindowSnapshot(
+            groups: [Fixture.group("Finder", pid: 1, titles: ["Downloads"]), code],
+            capturedAt: .now
+        )
+    }
+
+    @Test("a refresh that reorders windows leaves an app-row selection on the app row")
+    func staysOnAppRow() {
+        var state = OverlayState()
+        _ = state.apply(.snapshotChanged(snapshot(codeOrder: ["a", "b", "c"])))
+        _ = state.apply(.summon)
+        // Summon lands on the second app, which is Code, on the app row.
+        #expect(state.selection == .grouped(app: 1, window: nil))
+
+        // The MRU moves "a" to third place, as it does whenever another window is used.
+        _ = state.apply(.snapshotChanged(snapshot(codeOrder: ["b", "c", "a"])))
+
+        // Previously this followed window "a" to index 2 and silently entered the strip,
+        // so the next reveal began on the third tile.
+        #expect(state.selection == .grouped(app: 1, window: nil))
+    }
+
+    @Test("a refresh still keeps a strip selection on the same window")
+    func followsWindowInsideStrip() {
+        var state = OverlayState()
+        _ = state.apply(.snapshotChanged(snapshot(codeOrder: ["a", "b", "c"])))
+        _ = state.apply(.summon)
+        _ = state.apply(.enterStrip)
+        _ = state.apply(.nextWindow)                      // on "b", index 1
+        #expect(state.selectedWindow?.title == "b")
+
+        _ = state.apply(.snapshotChanged(snapshot(codeOrder: ["c", "a", "b"])))
+        // Same window, new index: the point of tracking by id rather than position.
+        #expect(state.selectedWindow?.title == "b")
+        #expect(state.selection == .grouped(app: 1, window: 2))
+    }
+
+    @Test("dwell after a reorder still reveals from the first tile")
+    func revealStartsAtFirstTile() {
+        var state = OverlayState()
+        _ = state.apply(.snapshotChanged(snapshot(codeOrder: ["a", "b", "c"])))
+        _ = state.apply(.summon)
+        _ = state.apply(.snapshotChanged(snapshot(codeOrder: ["b", "c", "a"])))
+        _ = state.apply(.dwellElapsed)
+        _ = state.apply(.enterStrip)
+        #expect(state.selection == .grouped(app: 1, window: 0))
     }
 }

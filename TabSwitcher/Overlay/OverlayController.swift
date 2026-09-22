@@ -19,6 +19,8 @@ final class OverlayController: NSObject {
     private var panel: OverlayPanel?
     private var hosting: NSHostingController<OverlayView>?
     private var dwellTask: Task<Void, Never>?
+    /// Where the pointer was when a hover was last acted on. See `pointerMoved`.
+    private var lastPointerLocation: CGPoint?
     /// Screen-space Y of the panel's top edge for the current session.
     ///
     /// The strip reveals *below* the app row, so the panel grows downward. Re-centring
@@ -83,6 +85,36 @@ final class OverlayController: NSObject {
         case .arrow(.right): dispatch(.nextWindow)
         case .arrow(.left): dispatch(.previousWindow)
         }
+    }
+
+    /// Input from the view, filtered before it reaches the state machine.
+    ///
+    /// Everything except hover goes straight through. Hover needs a gate because
+    /// SwiftUI's `onHover` reports the pointer being *over* a view, not the user moving
+    /// it there: AppKit rebuilds tracking areas on every layout pass, so a tile that
+    /// slides under a stationary pointer fires `onHover` exactly as a deliberate move
+    /// would. The panel relayouts on every state change, which made this constant.
+    ///
+    /// The symptoms were ugly and looked random, because they depended on where the
+    /// pointer happened to be resting. A tile arriving under it selected another app and
+    /// collapsed the strip the instant dwell revealed it — the strip "opening and
+    /// closing too fast to see". A strip tile arriving under it jumped the selection to
+    /// that window, so stepping in began at the second or third tile.
+    private func receive(_ input: OverlayInput) {
+        if case .hover = input, !pointerMoved() { return }
+        dispatch(input)
+    }
+
+    /// Whether the pointer has actually moved since the last hover we accepted.
+    ///
+    /// The threshold is there for resting fingers: a trackpad reports sub-pixel drift
+    /// from a hand that is not moving, and treating that as intent brings the whole
+    /// problem back. Two points is far below the size of any tile.
+    private func pointerMoved() -> Bool {
+        let location = NSEvent.mouseLocation
+        defer { lastPointerLocation = location }
+        guard let last = lastPointerLocation else { return true }
+        return abs(location.x - last.x) > 2 || abs(location.y - last.y) > 2
     }
 
     /// Reads the state out, mutates the copy, then assigns it back.
@@ -192,7 +224,7 @@ final class OverlayController: NSObject {
         let panel = OverlayPanel()
         let hosting = NSHostingController(
             rootView: OverlayView(model: model) { [weak self] input in
-                self?.dispatch(input)
+                self?.receive(input)
             }
         )
         hosting.sizingOptions = [.preferredContentSize]
@@ -226,6 +258,9 @@ final class OverlayController: NSObject {
         // Centre once, for the collapsed layout, then keep that top edge for the rest
         // of the session.
         anchorTop = nil
+        // Seeded so the panel appearing under a stationary pointer is not mistaken for
+        // the user having moved it there.
+        lastPointerLocation = NSEvent.mouseLocation
         panel.alphaValue = 1
         panel.orderFrontRegardless()
         panel.makeKey()

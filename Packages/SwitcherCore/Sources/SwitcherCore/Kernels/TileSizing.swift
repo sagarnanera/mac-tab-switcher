@@ -48,8 +48,13 @@ public enum TileSizing {
 
         public static let `default` = Metrics()
 
+        /// The bounds the preview-size setting may take. Exposed so the settings UI
+        /// cannot drift from the clamp: a slider whose range disagrees with the clamp
+        /// silently snaps back and looks broken.
+        public static let widthRange: ClosedRange<CGFloat> = 120...400
+
         public static func clampedWidth(_ width: CGFloat) -> CGFloat {
-            min(400, max(120, width))
+            min(widthRange.upperBound, max(widthRange.lowerBound, width))
         }
     }
 

@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import ServiceManagement
 import SwiftUI
 
 @MainActor
@@ -103,6 +104,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     try? await Task.sleep(for: .seconds(4))
                     environment.controller.revealStripForDemo()
                 }
+            }
+            if CommandLine.arguments.contains("--test-login-item") {
+                Self.testLoginItem()
             }
             if CommandLine.arguments.contains("--dump-a11y") {
                 // SwiftUI has not laid out the strip at the instant the reveal is
@@ -380,6 +384,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
     }
 
+    /// `--settings appearance` opens straight to a pane. Several settings can only be
+    /// judged by looking at them, and a script cannot click a sidebar row.
+    private static func requestedSettingsPane() -> SettingsView.Pane {
+        guard let index = CommandLine.arguments.firstIndex(of: "--settings"),
+              CommandLine.arguments.indices.contains(index + 1),
+              let pane = SettingsView.Pane(rawValue: CommandLine.arguments[index + 1])
+        else { return .general }
+        return pane
+    }
+
     @objc private func openSettings() {
         guard let environment else { return }
         // An accessory app cannot reliably bring a window to the front — it has no Dock
@@ -400,7 +414,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         )
         window.title = "TabSwitcher Settings"
         window.contentView = NSHostingView(
-            rootView: SettingsView(preferences: environment.preferences) { [weak environment] in
+            rootView: SettingsView(
+                preferences: environment.preferences,
+                initialPane: Self.requestedSettingsPane()
+            ) { [weak environment] in
                 environment?.applyPreferences()
             }
         )
@@ -425,6 +442,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// terminal's grants rather than the app's. Anything permission-dependent has to be
     /// measured in here, which is why this runs on every launch and not only in demo
     /// mode.
+    /// Registers and unregisters the login item, reporting what the system said.
+    ///
+    /// `SMAppService.mainApp` describes the *calling* bundle, so this cannot be checked
+    /// from a script or a test binary — only from inside the app, which is why it is a
+    /// flag rather than a unit test. It also depends on where the app is installed: a
+    /// bundle in a temporary or non-standard location registers and then silently fails
+    /// to launch, so the path is reported alongside the status.
+    private static func testLoginItem() {
+        func status() -> String {
+            switch SMAppService.mainApp.status {
+            case .enabled: "enabled"
+            case .requiresApproval: "requiresApproval (user must allow it in System Settings)"
+            case .notRegistered: "notRegistered"
+            case .notFound: "notFound"
+            @unknown default: "unknown"
+            }
+        }
+
+        var report = "login item test\n\n"
+        report += "bundle:  \(Bundle.main.bundlePath)\n"
+        report += "initial: \(status())\n"
+
+        let wasEnabled = LaunchAtLogin.isEnabled
+
+        if let error = LaunchAtLogin.set(true) {
+            report += "register FAILED: \(error)\n"
+        } else {
+            report += "after register: \(status())  isEnabled=\(LaunchAtLogin.isEnabled)"
+            report += "  needsApproval=\(LaunchAtLogin.needsApproval)\n"
+        }
+
+        if let error = LaunchAtLogin.set(false) {
+            report += "unregister FAILED: \(error)\n"
+        } else {
+            report += "after unregister: \(status())  isEnabled=\(LaunchAtLogin.isEnabled)\n"
+        }
+
+        // Left as it was found: a diagnostic that changes a user setting is a bug.
+        if wasEnabled { _ = LaunchAtLogin.set(true) }
+        report += "restored to: \(status())\n"
+
+        try? report.write(toFile: "/tmp/tabswitcher-loginitem.txt", atomically: true, encoding: .utf8)
+    }
+
     /// Walks the overlay's own accessibility tree and writes what a screen reader would
     /// find there.
     ///

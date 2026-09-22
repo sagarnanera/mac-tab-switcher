@@ -11,9 +11,13 @@ import SwitcherCore
 /// idiom for something this ordinary.
 struct SettingsView: View {
     @Bindable var preferences: Preferences
+    /// Which pane to show first. Defaults to General; `--settings <pane>` overrides it,
+    /// because several settings can only be judged by looking at them and reaching the
+    /// pane by hand is not something a script can do.
+    var initialPane: Pane = .general
     let onChange: () -> Void
 
-    @State private var pane: Pane? = .general
+    @State private var pane: Pane?
 
     enum Pane: String, CaseIterable, Identifiable {
         case general, shortcut, appearance, permissions
@@ -58,6 +62,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .navigationTitle(pane?.title ?? "Settings")
+            .onAppear { if pane == nil { pane = initialPane } }
         }
         .frame(width: 720, height: 460)
         .onChange(of: preferences.tileWidth) { _, _ in onChange() }
@@ -228,7 +233,7 @@ private struct AppearancePane: View {
             Section("Preview size") {
                 LabeledContent("Width") {
                     HStack {
-                        Slider(value: $preferences.tileWidth, in: 120...400, step: 10)
+                        Slider(value: $preferences.tileWidth, in: TileSizing.Metrics.widthRange, step: 10)
                             .frame(width: 200)
                         Text("\(Int(preferences.tileWidth)) pt")
                             .monospacedDigit()
@@ -258,8 +263,18 @@ private struct AppearancePane: View {
         .formStyle(.grouped)
     }
 
+    /// Drawn to scale *within the range*, not at half the real size.
+    ///
+    /// Three tiles at half of 400pt plus gutters is 620pt, and the pane is roughly 470pt
+    /// wide: past about 300pt the row overflowed, the tiles were squeezed out of their
+    /// aspect ratio and the section grew. What the sample is for is comparing one
+    /// setting to another, so mapping the slider's range onto a width that always fits
+    /// preserves everything it was communicating.
     private var previewSample: some View {
-        let width = preferences.tileWidth / 2
+        let range = TileSizing.Metrics.widthRange
+        let fraction = (preferences.tileWidth - range.lowerBound)
+            / (range.upperBound - range.lowerBound)
+        let width = 44 + fraction * 84
         return HStack(spacing: 10) {
             ForEach(0..<3, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 6)
