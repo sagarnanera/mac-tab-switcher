@@ -10,7 +10,7 @@ jobs:
     name: SwitcherCore tests
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Runs with no GUI session, no permissions and no Xcode project. That this is
       # possible at all is the point of keeping the logic in its own package.
@@ -50,7 +50,7 @@ jobs:
     name: App builds
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           xcodebuild -project TabSwitcher.xcodeproj -scheme TabSwitcher \
             -configuration Release CODE_SIGNING_ALLOWED=NO build
