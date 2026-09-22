@@ -72,7 +72,10 @@ SIGNATURE=$("$SIGN_UPDATE" "$ZIP") || {
     exit 1
 }
 
-LENGTH=$(stat -f%z "$ZIP")
+# sign_update prints BOTH sparkle:edSignature and length, ready to paste into the
+# enclosure. Adding our own length here produced a duplicate attribute and an appcast no
+# XML parser would accept — caught by validating the merged feed rather than by Sparkle
+# rejecting it in front of a user.
 PUBDATE=$(date -R 2>/dev/null || date "+%a, %d %b %Y %H:%M:%S %z")
 URL="https://github.com/$( sed -n 's/.*"github_repo": *"\([^"]*\)".*/\1/p' .release.json 2>/dev/null || echo sagarnanera/tab-switcher )/releases/download/v$VERSION/$(basename "$ZIP")"
 
@@ -87,7 +90,7 @@ cat > "$DIST/appcast-item.xml" <<XML
             <sparkle:version>$VERSION</sparkle:version>
             <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="$URL" length="$LENGTH" type="application/octet-stream" $SIGNATURE />
+            <enclosure url="$URL" type="application/octet-stream" $SIGNATURE />
         </item>
 XML
 
