@@ -470,7 +470,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // restoring is concerned — reading only `isEnabled` would treat it as off and
         // leave this test having quietly cancelled a pending login item.
         let initialStatus = SMAppService.mainApp.status
-        let wasRegistered = initialStatus == .enabled || initialStatus == .requiresApproval
+        let wasRegistered = LaunchAtLogin.isRegistered(initialStatus)
 
         if let error = LaunchAtLogin.set(true) {
             report += "register FAILED: \(error)\n"
@@ -491,16 +491,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             report += "RESTORE FAILED: \(error)\n"
             report += "  the login item was registered before this ran and is not now\n"
         }
-        // `notFound` and `notRegistered` both mean "no login item"; they differ only in
-        // whether macOS has ever held a record for this bundle. A first run reports
-        // `notFound` and ends at `notRegistered`, which is a restored state and not a
-        // failed one — comparing the raw values would cry mismatch on exactly the fresh
-        // install this flag exists to check.
-        func isRegistered(_ value: SMAppService.Status) -> Bool {
-            value != .notRegistered && value != .notFound
-        }
+        // Compared by whether anything is registered rather than by the raw values: a
+        // first run reports `notFound` and ends at `notRegistered`, which is a restored
+        // state, not a failed one. Same predicate as the restore decision above, so the
+        // two cannot disagree about a status Apple adds later.
         let finalStatus = SMAppService.mainApp.status
-        if isRegistered(finalStatus) == isRegistered(initialStatus) {
+        if LaunchAtLogin.isRegistered(finalStatus) == wasRegistered {
             report += "restored to: \(status(finalStatus))\n"
         } else {
             report += "RESTORE MISMATCH: expected \(status(initialStatus)), got \(status(finalStatus))\n"
