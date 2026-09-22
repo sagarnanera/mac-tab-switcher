@@ -55,6 +55,11 @@ td:first-child { width: 42%; padding-right: 20px; }
 }
 .note p:last-child { margin: 0; }
 .muted { color: var(--muted); font-size: 15px; }
+figure { margin: 28px 0; }
+figure img {
+  width: 100%; border-radius: 12px; display: block;
+  border: 1px solid var(--line);
+}
 footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; }
 @media (max-width: 560px) {
   header { padding: 56px 0 36px; }
@@ -70,14 +75,24 @@ footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line);
 <div class="wrap">
 
 <header>
+  <img src="media/icon.png" alt="" width="104" style="margin-bottom:18px">
   <h1>TabSwitcher</h1>
   <p class="tagline">A window switcher for macOS, with previews.
   <kbd>⌥</kbd><kbd>Tab</kbd> cycles apps — rest on one and its windows appear beneath.</p>
 </header>
 
+<figure><img src="media/switcher.png" alt="The app row, showing a live preview of each window"></figure>
+
 <p><kbd>⌘</kbd><kbd>Tab</kbd> shows icons, not windows. With five VS Code windows open it
 offers one entry and no way to say which. TabSwitcher shows what each window actually
 contains, and reaches individual windows of the same app without leaving the keyboard.</p>
+
+<h2>Two levels, one key</h2>
+<figure><img src="media/windows.png" alt="An app's windows unfolded beneath the app row"></figure>
+<p>Pause on an app with more than one window and its windows unfold underneath. Keep
+tapping <kbd>Tab</kbd> and you are moving through <em>those</em>. Move quickly and it
+behaves exactly like <kbd>⌘</kbd><kbd>Tab</kbd>, so it never slows down the switch you
+already knew how to make.</p>
 
 <h2>The keys</h2>
 <table>
@@ -131,10 +146,19 @@ instead of thumbnails.</p>
 telemetry, no crash reporting, no update check.
 <a href="https://github.com/sagarnanera/tab-switcher/blob/main/docs/PERMISSIONS.md">What degrades without each →</a></p>
 
+<h2>Settings</h2>
+<figure><img src="media/settings.png" alt="The settings window"></figure>
+<p class="muted">The shortcut, the length of the pause, preview size, what counts as a
+window, and whether the key hints are shown at all.</p>
+
 <h2>Honest limitations</h2>
 <p><strong>It does not switch browser tabs.</strong> A background tab has no capturable
 pixels by any mechanism — not ScreenCaptureKit, not accessibility, not even a browser
 extension.</p>
+<p><strong>Nothing tells you when a new version exists.</strong> There is no updater — it
+would have meant disabling a macOS security check, which is a poor trade for an app holding
+Screen Recording. Re-run the install command to update; it replaces the app in place and
+keeps your permissions.</p>
 <p><strong>It uses seven undocumented macOS calls</strong>, each resolved at runtime with a
 public fallback, to raise specific windows and capture minimized ones. If one disappears in
 a macOS update the app loses that capability and keeps running.

@@ -1,52 +1,82 @@
+<div align="center">
+
+<img src="docs/media/icon.png" alt="" width="112">
+
 # TabSwitcher
 
-A window switcher for macOS with previews. ⌥Tab cycles apps; rest on one with several
-windows and its windows appear beneath, still under the same key.
+**A window switcher for macOS that shows you the windows.**
 
-<!-- TODO: demo.gif — ⌥Tab through the app row, pause on a multi-window app, step into the
-     strip, release. Recorded at 1400px wide, under 5MB, no cursor. -->
+<kbd>⌥</kbd><kbd>Tab</kbd> cycles apps. Rest on one and its windows appear beneath it —
+still on the same key.
 
-![Demo](docs/demo.gif)
+<img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-111?style=flat-square">
+<img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-111?style=flat-square">
+<img alt="MIT" src="https://img.shields.io/badge/licence-MIT-111?style=flat-square">
+<img alt="No network code" src="https://img.shields.io/badge/network%20code-none-111?style=flat-square">
 
-## Why
+</div>
 
-⌘Tab shows icons, not windows. If you have five VS Code windows open it offers you one
-entry and no way to say which. TabSwitcher shows what each window actually contains, and
-reaches individual windows of the same app without leaving the keyboard.
+<br>
 
-## How it works
+![The app row](docs/media/switcher.png)
 
-Two levels, one key.
+## The problem
+
+<kbd>⌘</kbd><kbd>Tab</kbd> shows icons. Icons tell you an app is open, not which of its
+windows you want.
+
+Open five VS Code windows and macOS offers you one entry. Pick it and you land on whichever
+was frontmost last — which is rarely the one you were thinking of — and then you hunt
+through Window menus or Mission Control, having already lost the thread.
+
+Every window in that row above is a live preview. You choose by looking, not by remembering.
+
+## Two levels, one key
+
+![The window strip](docs/media/windows.png)
+
+Hold <kbd>⌥</kbd> and tap <kbd>Tab</kbd>: you move along the app row. Pause on an app that
+has more than one window and its windows unfold underneath. Keep tapping <kbd>Tab</kbd> and
+you are now moving through *those*.
+
+The pause is the whole interaction. Move quickly and it behaves exactly like
+<kbd>⌘</kbd><kbd>Tab</kbd>, so it never slows down the switch you already knew how to make.
+Slow down and it gives you more. You never press a different key, and you never reach for
+the arrows with your other hand.
+
+If you would rather it never unfolded on its own, set the pause to **never** and use
+<kbd>↓</kbd> or the mouse. If you would rather it were instant, set it to that.
+
+### Every key
 
 | | |
 |---|---|
-| `⌥Tab` | next app |
-| `⌥⇧Tab` | previous app |
-| hold on an app with several windows | after a moment its windows appear below |
-| `⌥Tab` again, once they have appeared | steps through *those* windows |
-| `⌥1`–`⌥9` | jump straight to a window in the strip |
-| type anything | filter every window by name |
-| `↑` | back up to the app row |
-| release `⌥` | switch |
-| `esc` | cancel |
+| <kbd>⌥</kbd><kbd>Tab</kbd> | next app — or next window, once the strip is open |
+| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>Tab</kbd> | backwards, at whichever level you are on |
+| <kbd>⌥</kbd><kbd>1</kbd>…<kbd>9</kbd> | jump straight to a numbered window |
+| <kbd>↓</kbd> | open the strip now, without waiting |
+| <kbd>↑</kbd> | back up to the app row |
+| <kbd>←</kbd> <kbd>→</kbd> | move within a row |
+| type anything | filter every window on the machine by name |
+| release <kbd>⌥</kbd>, or <kbd>↵</kbd> | switch |
+| <kbd>esc</kbd> | cancel |
 
-The dwell before windows appear is configurable, including "never" (use `↓` or the mouse)
-and "immediately". Settings → Behavior.
+It reaches windows that are minimized, on another Space, or in full screen, and shows a
+preview of each — including the minimized ones, which still show how they last looked.
 
 ## Install
 
-**No notarized build yet.** TabSwitcher is not signed with an Apple Developer ID, which
-has consequences worth knowing before you install:
+> [!IMPORTANT]
+> **There is no notarized build.** This app has no paid Apple Developer ID, so a browser
+> download is blocked outright by Gatekeeper — recent macOS removed the Control-click
+> bypass — and Homebrew is not an option, since casks have required notarization since
+> September 2026.
+>
+> The script below sidesteps that legitimately rather than by a trick: the quarantine flag
+> is applied by the *downloading application*, and `curl` does not apply one. Nothing is
+> bypassed and no check is disabled.
 
-- A build downloaded through a browser is **blocked** by Gatekeeper, and recent macOS
-  removed the Control-click bypass. You would have to go to System Settings → Privacy &
-  Security → Open Anyway and authenticate.
-- Homebrew is not an option; casks have required notarization since September 2026.
-
-The install script avoids this legitimately rather than by a trick: quarantine is applied
-by the *downloading application*, and `curl` does not apply it. Nothing is bypassed.
-
-**Read it first, then run it.** This is the honest form, and the one to prefer:
+**Read it, then run it.** This is the form to prefer:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh -o install.sh
@@ -54,97 +84,87 @@ less install.sh
 bash install.sh
 ```
 
-The one-liner, if you have already read the script:
+Or, once you have read it:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh | bash
 ```
 
-Piping a remote script into a shell runs whatever that URL serves at that moment. The
-precedent — Homebrew, rustup — makes it normal, not safe. It is worth being deliberate
-about here in particular, because this app asks for permissions that can read your screen.
+Piping a remote script into a shell runs whatever that URL serves at that moment. Homebrew
+and rustup make that normal; they do not make it safe. It is worth being deliberate about
+here in particular, because the app you are installing asks for permission to read your
+screen.
 
-### Or build it yourself
+### Build it instead
 
-Requires Xcode 16 or newer. macOS 14+.
+Xcode 16 or newer, macOS 14 or newer.
 
 ```bash
 git clone https://github.com/sagarnanera/tab-switcher
 cd tab-switcher
 bash Scripts/setup.sh          # once: creates a stable signing identity
 bash Scripts/build.sh          # builds, signs, installs to ~/Applications
-bash Scripts/build.sh --run
 ```
 
-Or `open TabSwitcher.xcodeproj` and ⌘R.
+### Updating
 
-Headless check of what resolved and what discovery found — no GUI, no permission dialog:
+Re-run the install command. It replaces the app in place and your permissions survive, so
+there is no need to uninstall first. Nothing will tell you a new version exists — there is
+no update check — so watch the repository if you want to know.
 
-```bash
-~/Applications/TabSwitcher.app/Contents/MacOS/TabSwitcher --diagnose
-```
+## The two permissions
 
-## Quitting it
+![First run](docs/media/welcome.png)
 
-TabSwitcher is a menu bar agent with no Dock icon, so there are three ways out:
+The app asks for these in context, on first run, and explains each before prompting rather
+than throwing a system dialog at you and hoping.
 
-- the **stacked-squares icon** in the menu bar → Quit TabSwitcher
-- Settings → Quit TabSwitcher
-- `bash Scripts/quit.sh`
+**Accessibility** — to *raise* a window. macOS offers no public way to bring one specific
+window of an application forward; that goes through the accessibility API. Without it the
+app still runs and falls back to a less reliable path.
 
-The last one exists on purpose. A menu bar item can end up unreachable — pushed under the
-notch on a crowded menu bar — and an app you cannot quit is worse than one that does not
-run.
+**Screen Recording** — for the previews. macOS treats reading another app's window pixels
+as screen recording, whatever you intend to do with them. Without it you get application
+icons instead of thumbnails, and on some systems window titles disappear as well.
 
-## Permissions
+Neither sends anything anywhere. There is no network code in this app at all: no telemetry,
+no crash reporting, no update check. [What degrades without each →](docs/PERMISSIONS.md)
 
-Two, and the app tells you what each is for on first run rather than prompting cold.
+## Settings
 
-**Accessibility** — required to *raise* a window. macOS has no public way to bring one
-specific window of an app forward; it goes through the accessibility API. Without it the
-app still runs, using a fallback that is less reliable across Spaces.
+![Settings](docs/media/settings.png)
 
-**Screen Recording** — required for the previews. macOS treats reading the pixels of
-another app's window as screen recording, whatever the purpose. Without it you get app
-icons instead of thumbnails, and on some systems window titles disappear too.
+The shortcut, how long the pause is, how large the previews are, whether Finder and
+Terminal tabs count as separate windows, whether minimized windows appear, and whether the
+key hints along the bottom are shown at all — they are useful for a week and clutter
+thereafter.
 
-Neither permission sends anything anywhere. There is no network code in this app at all —
-no telemetry, no crash reporting, no update check.
+**Quitting it.** TabSwitcher is a menu bar agent with no Dock icon, so there are three ways
+out: the stacked-squares icon in the menu bar, the button in Settings, or
+`bash Scripts/quit.sh`. The last one exists on purpose — a menu bar item can end up
+unreachable, pushed under the notch on a crowded bar, and an app you cannot quit is worse
+than one that does not run.
 
-`docs/PERMISSIONS.md` has the detail, including what degrades and how.
+## What it will not do
 
-## FAQ
+Stated plainly, because finding out later is worse.
 
-**Does it switch browser tabs?**
-No. A background tab has no capturable pixels by any mechanism — not ScreenCaptureKit, not
-accessibility, not even a browser extension. See `ARCHITECTURE.md` §8.
+**Browser tabs.** A background tab has no capturable pixels by any mechanism — not
+ScreenCaptureKit, not accessibility, not even a browser extension, whose `captureVisibleTab`
+is active-tab-only. A workable design exists (capture on tab-exit, cache by URL, fall back
+to favicons) and is not built. [Why →](ARCHITECTURE.md)
 
-**Why does it want Screen Recording just to show small pictures?**
-Because macOS makes no distinction between a thumbnail and a recording. The same
-permission covers both.
+**Arrive without Gatekeeper complaining.** See the install note. This is a missing $99, not
+a missing feature.
 
-**Does it use private APIs?**
-Yes, seven of them, each behind a runtime check with a public fallback. `docs/PRIVATE_APIS.md`
-lists every one, what it does, and what happens when it disappears. The same symbols have
-shipped in AltTab and DockDoor for years.
+**Announce its own updates.** There is no updater. That was a deliberate removal: the only
+way to have one on a self-signed app was to disable macOS library validation, which is a
+poor trade for an app holding Screen Recording. [The reasoning →](docs/RELEASE_PLAN.md)
 
-**Will it survive a macOS update?**
-The private calls are resolved with `dlsym` at runtime, never linked. If one vanishes the
-app loses that capability and keeps running; it does not fail to launch. Run
-`TabSwitcher --diagnose` to see which paths are live.
+**Follow VoiceOver through the cycle.** Every tile is labelled, but moving the selection
+does not move system focus, so a screen reader will not announce each step.
 
-**How do I update it?**
-Re-run the install command. It replaces the app in place and your permissions survive — no
-need to uninstall first. There is no auto-updater and no update check, which also means
-nothing tells you a new version exists; watch the repo if you want to know.
-
-**How do I quit it?**
-Menu bar icon → Quit, or `bash Scripts/quit.sh`. It has no Dock icon by design.
-
-**Where are the settings?**
-Menu bar icon → Settings. Shortcut, dwell timing, preview size, launch at login.
-
-## Layout
+## How it is built
 
 ```
 Packages/SwitcherCore/   pure decision logic. No AppKit, no accessibility, no capture.
@@ -152,7 +172,7 @@ Packages/SwitcherCore/   pure decision logic. No AppKit, no accessibility, no ca
   Kernels/               one file per decision, each with a *Specs.md beside it
 TabSwitcher/
   Platform/              the ONLY place private macOS APIs are touched
-  Inventory/             window discovery and the store that keeps it warm
+  Inventory/             window discovery, and the store that keeps it warm
   Capture/               thumbnails: memory tier, disk tier, two capture backends
   Input/                 the event tap and its dedicated thread
   Overlay/               NSPanel + SwiftUI, driven by the state machine
@@ -160,31 +180,44 @@ TabSwitcher/
   Welcome/               the guided first run
 ```
 
-Two rules the architecture exists to enforce:
+Two rules the whole architecture exists to enforce:
 
-**Never look anything up while the user is pressing the key.** Discovery runs at launch
-and on system events; the hotkey only reads memory. This is why SwiftUI is fast enough
-here — the framework was never the bottleneck, doing work at the wrong moment was.
+**Never look anything up while the user is holding the key.** Discovery runs at launch and
+on system events; the shortcut only reads memory. This is why SwiftUI is fast enough here.
+The framework was never the bottleneck — doing work at the wrong moment was.
 
-**Every decision is a pure function.** The whole interaction model lives in
-`OverlayStateMachine` and is verified by tests that never open a window.
+**Every decision is a pure function.** The entire interaction model lives in one state
+machine and is verified by tests that never open a window.
 
 ```bash
-cd Packages/SwitcherCore && swift test
+cd Packages/SwitcherCore && swift test     # 73 tests, no GUI, no permissions
 ```
 
-## Docs
+It calls seven undocumented macOS functions, each resolved at runtime and each with a
+public fallback, to raise specific windows, capture minimized ones and work out which Space
+a window is on. If one disappears in a macOS update, the app loses that capability and
+keeps running. `TabSwitcher --diagnose` prints which paths are live.
+
+## Documentation
 
 | | |
 |---|---|
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | the shape of the app, and the decisions that look arbitrary but are not |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to work on it, and the four rules CI enforces |
-| [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md) | what is needed, what degrades without it, and why signing matters |
-| [`docs/PRIVATE_APIS.md`](docs/PRIVATE_APIS.md) | which private calls, why, and what happens when one disappears |
-| [`SECURITY.md`](SECURITY.md) | what this app can see, what it does not do, and the trust model for updates |
-| [`docs/RELEASE_PLAN.md`](docs/RELEASE_PLAN.md) | how releases are cut, and what self-signing costs |
-| [`CHANGELOG.md`](CHANGELOG.md) | what changed, per release |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | how it fits together, and the decisions that look arbitrary but are not |
+| [docs/PERMISSIONS.md](docs/PERMISSIONS.md) | what each permission buys, and what breaks without it |
+| [docs/PRIVATE_APIS.md](docs/PRIVATE_APIS.md) | every private call, why it is there, and what happens when it goes |
+| [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md) | how releases are cut, and what shipping unsigned costs |
+| [SECURITY.md](SECURITY.md) | what this app can see, and what it does not do |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | the four rules CI enforces, and the traps worth knowing first |
+| [CHANGELOG.md](CHANGELOG.md) | what changed, per release |
 
-## License
+## Credits
 
-MIT. See `LICENSE`.
+[AltTab](https://github.com/lwouis/alt-tab-macos) and
+[DockDoor](https://github.com/ejbills/DockDoor) solved most of these problems first, in the
+open, and reading them saved months. No code is taken from either; the private symbols they
+use are facts about macOS rather than anyone's invention, and the implementations here are
+independent.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).
