@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Question about how it works
-    url: https://github.com/sagarnanera/tab-switcher/discussions
+    url: https://github.com/sagarnanera/mac-tab-switcher/discussions
     about: Ask here rather than opening an issue.
   - name: Why does it need Screen Recording?
-    url: https://github.com/sagarnanera/tab-switcher/blob/main/docs/PERMISSIONS.md
+    url: https://github.com/sagarnanera/mac-tab-switcher/blob/main/docs/PERMISSIONS.md
     about: What each permission is for, and what degrades without it.
   - name: Security vulnerability
-    url: https://github.com/sagarnanera/tab-switcher/security/advisories/new
+    url: https://github.com/sagarnanera/mac-tab-switcher/security/advisories/new
     about: Please report privately, not as a public issue.

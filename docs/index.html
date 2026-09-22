@@ -120,19 +120,19 @@ already knew how to make.</p>
 
 <h3>Read it first, then run it</h3>
 <p>This is the form to prefer.</p>
-<pre><code>curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh -o install.sh
+<pre><code>curl -fsSL https://raw.githubusercontent.com/sagarnanera/mac-tab-switcher/main/Scripts/install.sh -o install.sh
 less install.sh
 bash install.sh</code></pre>
 
 <h3>Or, once you have read it</h3>
-<pre><code>curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh | bash</code></pre>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/sagarnanera/mac-tab-switcher/main/Scripts/install.sh | bash</code></pre>
 <p class="muted">Piping a remote script into a shell runs whatever that URL serves at that
 moment. Homebrew and rustup make it normal, not safe — and it is worth being deliberate
 about here, because this app asks for permission to read your screen.</p>
 
 <h3>Or build it</h3>
-<pre><code>git clone https://github.com/sagarnanera/tab-switcher
-cd tab-switcher
+<pre><code>git clone https://github.com/sagarnanera/mac-tab-switcher
+cd mac-tab-switcher
 bash Scripts/setup.sh
 bash Scripts/build.sh</code></pre>
 
@@ -144,7 +144,7 @@ window pixels as screen recording, whatever the purpose. Without it you get app 
 instead of thumbnails.</p>
 <p>Neither sends anything anywhere. There is no network code in this app at all — no
 telemetry, no crash reporting, no update check.
-<a href="https://github.com/sagarnanera/tab-switcher/blob/main/docs/PERMISSIONS.md">What degrades without each →</a></p>
+<a href="https://github.com/sagarnanera/mac-tab-switcher/blob/main/docs/PERMISSIONS.md">What degrades without each →</a></p>
 
 <h2>Settings</h2>
 <figure><img src="media/settings.png" alt="The settings window"></figure>
@@ -162,13 +162,13 @@ keeps your permissions.</p>
 <p><strong>It uses seven undocumented macOS calls</strong>, each resolved at runtime with a
 public fallback, to raise specific windows and capture minimized ones. If one disappears in
 a macOS update the app loses that capability and keeps running.
-<a href="https://github.com/sagarnanera/tab-switcher/blob/main/docs/PRIVATE_APIS.md">Every one of them, listed →</a></p>
+<a href="https://github.com/sagarnanera/mac-tab-switcher/blob/main/docs/PRIVATE_APIS.md">Every one of them, listed →</a></p>
 
 <footer>
-  <p><a href="https://github.com/sagarnanera/tab-switcher">Source</a> ·
-     <a href="https://github.com/sagarnanera/tab-switcher/blob/main/CHANGELOG.md">Changelog</a> ·
-     <a href="https://github.com/sagarnanera/tab-switcher/blob/main/SECURITY.md">Security</a> ·
-     <a href="https://github.com/sagarnanera/tab-switcher/issues">Issues</a></p>
+  <p><a href="https://github.com/sagarnanera/mac-tab-switcher">Source</a> ·
+     <a href="https://github.com/sagarnanera/mac-tab-switcher/blob/main/CHANGELOG.md">Changelog</a> ·
+     <a href="https://github.com/sagarnanera/mac-tab-switcher/blob/main/SECURITY.md">Security</a> ·
+     <a href="https://github.com/sagarnanera/mac-tab-switcher/issues">Issues</a></p>
   <p>MIT licensed.</p>
 </footer>
 

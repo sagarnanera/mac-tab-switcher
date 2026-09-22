@@ -8,13 +8,13 @@
 # and curl does not apply it.
 #
 # Read before running:
-#   curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh -o install.sh
+#   curl -fsSL https://raw.githubusercontent.com/sagarnanera/mac-tab-switcher/main/Scripts/install.sh -o install.sh
 #   less install.sh
 #   bash install.sh
 
 set -euo pipefail
 
-REPO="sagarnanera/tab-switcher"
+REPO="sagarnanera/mac-tab-switcher"
 APP="TabSwitcher.app"
 BUNDLE_ID="dev.sagar.tabswitcher"
 

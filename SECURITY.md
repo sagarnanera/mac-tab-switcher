@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Open a [private security advisory](https://github.com/sagarnanera/tab-switcher/security/advisories/new).
+Open a [private security advisory](https://github.com/sagarnanera/mac-tab-switcher/security/advisories/new).
 Please do not open a public issue for anything exploitable.
 
 Expect an acknowledgement within a week. This is a spare-time project, not a funded one —

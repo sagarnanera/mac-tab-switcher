@@ -44,5 +44,5 @@ First release.
   app's own selection without moving system focus, so a screen reader will not announce
   each step.
 
-[Unreleased]: https://github.com/sagarnanera/tab-switcher/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/sagarnanera/tab-switcher/releases/tag/v0.1.0
+[Unreleased]: https://github.com/sagarnanera/mac-tab-switcher/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/sagarnanera/mac-tab-switcher/releases/tag/v0.1.0

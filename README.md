@@ -79,7 +79,7 @@ preview of each — including the minimized ones, which still show how they last
 **Read it, then run it.** This is the form to prefer:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/sagarnanera/mac-tab-switcher/main/Scripts/install.sh -o install.sh
 less install.sh
 bash install.sh
 ```
@@ -87,7 +87,7 @@ bash install.sh
 Or, once you have read it:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sagarnanera/tab-switcher/main/Scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sagarnanera/mac-tab-switcher/main/Scripts/install.sh | bash
 ```
 
 Piping a remote script into a shell runs whatever that URL serves at that moment. Homebrew
@@ -100,8 +100,8 @@ screen.
 Xcode 16 or newer, macOS 14 or newer.
 
 ```bash
-git clone https://github.com/sagarnanera/tab-switcher
-cd tab-switcher
+git clone https://github.com/sagarnanera/mac-tab-switcher
+cd mac-tab-switcher
 bash Scripts/setup.sh          # once: creates a stable signing identity
 bash Scripts/build.sh          # builds, signs, installs to ~/Applications
 ```
