@@ -132,6 +132,12 @@ The private calls are resolved with `dlsym` at runtime, never linked. If one van
 app loses that capability and keeps running; it does not fail to launch. Run
 `TabSwitcher --diagnose` to see which paths are live.
 
+**How does it update itself?**
+Sparkle, and it is off until you turn it on — you are asked on second launch. Updates are
+verified by a signature built into the app. Since there is no notarization, that signature
+is the only thing vouching for an update, so it matters; `SECURITY.md` explains the trust
+model, including what the missing Developer ID costs.
+
 **How do I quit it?**
 Menu bar icon → Quit, or `bash Scripts/quit.sh`. It has no Dock icon by design.
 
@@ -175,7 +181,9 @@ cd Packages/SwitcherCore && swift test
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to work on it, and the four rules CI enforces |
 | [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md) | what is needed, what degrades without it, and why signing matters |
 | [`docs/PRIVATE_APIS.md`](docs/PRIVATE_APIS.md) | which private calls, why, and what happens when one disappears |
-| [`SECURITY.md`](SECURITY.md) | what this app can see, and what it does not do |
+| [`SECURITY.md`](SECURITY.md) | what this app can see, what it does not do, and the trust model for updates |
+| [`docs/RELEASE_PLAN.md`](docs/RELEASE_PLAN.md) | how releases are cut, and what self-signing costs |
+| [`CHANGELOG.md`](CHANGELOG.md) | what changed, per release |
 
 ## License
 
